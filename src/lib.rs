@@ -215,7 +215,8 @@ pub fn sfs_decrypt(hash: u64, buf: &[u8]) -> Vec<u8> {
         .iter()
         .enumerate()
         .map(|(idx, byte)| {
-            // I think this a method of computing division using bitshifts.
+            // I think this a method of computing division using bitshifts, see:
+            //   https://stackoverflow.com/a/436535
             let hash_idx = (idx * 0x2AAAAAAAB >> 0x21) & 7;
             return byte ^ hash_bytes[hash_idx];
         })
@@ -231,8 +232,8 @@ pub fn sfs_decrypt2(hash: u64, buf: &[u8]) -> Vec<u8> {
         .iter()
         .enumerate()
         .map(|(idx, byte)| {
-            // I think this a method of computing division using bitshifts.
-            // This particular magic number approximates 
+            // I think this a method of computing division using bitshifts, see:
+            //   https://stackoverflow.com/a/436535
             let hash_idx = (idx * 0x4CCCCCCCD >> 0x22) & 7;
             return byte ^ hash_bytes[hash_idx];
         })
