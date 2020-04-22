@@ -14,7 +14,7 @@ before_script:
 
 build:
   extends:
-    - .shared-windows-runners
+    - .shared_windows_runners
   stage: build
   script:
     - cargo +stable-i686-pc-windows-msvc build --verbose
