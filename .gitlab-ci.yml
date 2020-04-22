@@ -8,8 +8,8 @@ stages:
   - build
 
 before_script:
-  - choco install jdk8 --x86
-  - choco install rustup.install
+  - choco install -y jdk8 --x86
+  - choco install -y rustup.install
   - rustup toolchain install stable-i686-pc-windows-msvc
 
 build:
