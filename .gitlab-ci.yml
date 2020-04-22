@@ -9,6 +9,7 @@ stages:
 
 before_script:
   - choco install -y jdk8 --x86
+  - choco install -y llvm
   - Set-Item -path env:CARGO_HOME -value ($env:CI_PROJECT_DIR + "\cargo")
   - Write-Output $env:CARGO_HOME
   - curl -o rustup-init.exe https://win.rustup.rs/i686
