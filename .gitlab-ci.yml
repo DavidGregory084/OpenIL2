@@ -13,7 +13,8 @@ before_script:
   - rustup toolchain install stable-i686-pc-windows-msvc
 
 build:
-  extends: .shared-windows-runners
+  extends:
+    - .shared-windows-runners
   stage: build
   script:
     - cargo +stable-i686-pc-windows-msvc build --verbose
