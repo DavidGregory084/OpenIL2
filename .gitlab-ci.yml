@@ -21,4 +21,4 @@ build:
   stage: build
   script:
     - cargo +stable-i686-pc-windows-msvc build --verbose
-    - cargo +stable-i686-pc-windows-mscv test --verbose
+    - cargo +stable-i686-pc-windows-msvc test --verbose
