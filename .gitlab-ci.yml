@@ -1,0 +1,20 @@
+.shared_windows_runners:
+  tags:
+  - shared-windows
+  - windows
+  - windows-1809
+
+stages:
+  - build
+
+before_script:
+  - choco install jdk8 --x86
+  - choco install rustup.install
+  - rustup toolchain install stable-i686-pc-windows-msvc
+
+build:
+  extends: .shared-windows-runners
+  stage: build
+  script:
+    - cargo +stable-i686-pc-windows-msvc build --verbose
+    - cargo +stable-i686-pc-windows-mscv test --verbose
