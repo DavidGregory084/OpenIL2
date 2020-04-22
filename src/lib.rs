@@ -142,8 +142,9 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_getLastErrorCode(
     }
 }
 
+#[allow(unused_variables)]
 #[no_mangle]
-extern "system" fn DllMain(_dllHandle: HINSTANCE, reason: DWORD, _: LPVOID) -> BOOLEAN {
+extern "system" fn DllMain(dllHandle: HINSTANCE, reason: DWORD, reserved: LPVOID) -> BOOLEAN {
     unsafe {
         match reason {
             DLL_PROCESS_ATTACH => PHYSFS_init(std::ptr::null()) as BOOLEAN,
