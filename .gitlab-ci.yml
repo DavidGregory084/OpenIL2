@@ -10,9 +10,11 @@ stages:
 before_script:
   - choco install -y jdk8 --x86
   - set CARGO_HOME='%CI_PROJECT_DIR%\cargo'
+  - echo %CARGO_HOME%
   - curl -o rustup-init.exe https://win.rustup.rs/i686
   - .\rustup-init.exe -y --profile minimal --default-toolchain stable --default-host i686-pc-windows-msvc
   - set PATH='%PATH%;%CARGO_HOME%\bin'
+  - echo %PATH%
 
 build:
   extends:
