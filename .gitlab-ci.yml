@@ -1,0 +1,9 @@
+image: java:8
+
+stages:
+  - build
+
+build:
+  stage: build
+  script:
+    - ./gradlew build
