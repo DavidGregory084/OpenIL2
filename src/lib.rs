@@ -54,14 +54,18 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_readBytes(
         let mut file = PHYSFS_File {
             opaque: fd as *mut libc::c_void,
         };
+
         let mut vec = vec![0 as i8; len as usize];
         let c_buf = &mut vec[..];
+
         let res = PHYSFS_readBytes(
             &mut file,
             c_buf.as_mut_ptr() as *mut libc::c_void,
             len as PHYSFS_uint64,
         ) as jint;
+
         env.set_byte_array_region(java_buf, 0, c_buf).unwrap();
+
         return res;
     }
 }
