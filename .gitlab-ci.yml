@@ -5,7 +5,7 @@
   - windows-1809
 
 variables:
-  CARGO_HOME: %CI_PROJECT_DIR%/cargo
+  CARGO_HOME: %CI_PROJECT_DIR%\cargo
 
 stages:
   - build
