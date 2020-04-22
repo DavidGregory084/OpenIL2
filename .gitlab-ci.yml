@@ -20,5 +20,5 @@ build:
     - .shared_windows_runners
   stage: build
   script:
-    - cargo +stable-i686-pc-windows-msvc build --verbose
-    - cargo +stable-i686-pc-windows-msvc test --verbose
+    - cargo build --verbose
+    - cargo test --verbose
