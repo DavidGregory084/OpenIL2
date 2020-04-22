@@ -8,8 +8,10 @@ extern crate libc;
 use jni::objects::*;
 use jni::sys::{jbyteArray, jint, jlong};
 use jni::*;
-use winapi::shared::minwindef::{DWORD, HINSTANCE, LPVOID};
-use winapi::um::winnt::{BOOLEAN, DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH};
+use winapi::shared::minwindef::{DWORD, HINSTANCE, LPVOID, MAX_PATH};
+use winapi::shared::ntdef::{FALSE, TRUE};
+use winapi::um::processenv::GetCurrentDirectoryA;
+use winapi::um::winnt::{BOOLEAN, CHAR, DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH};
 
 #[allow(unused_variables)]
 #[no_mangle]
@@ -133,6 +135,24 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_mount(
 
 #[allow(unused_variables)]
 #[no_mangle]
+pub extern "system" fn Java_com_maddox_rts_PhysFS_mountAs(
+    env: JNIEnv,
+    class: JClass,
+    file_name: JString,
+    mount_point: JString,
+    append: jint,
+) -> jint {
+    unsafe {
+        return PHYSFS_mount(
+            (**env.get_string(file_name).unwrap()).as_ptr(),
+            (**env.get_string(mount_point).unwrap()).as_ptr(),
+            append,
+        );
+    }
+}
+
+#[allow(unused_variables)]
+#[no_mangle]
 pub extern "system" fn Java_com_maddox_rts_PhysFS_getLastErrorCode(
     env: JNIEnv,
     class: JClass,
@@ -147,9 +167,29 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_getLastErrorCode(
 extern "system" fn DllMain(dllHandle: HINSTANCE, reason: DWORD, reserved: LPVOID) -> BOOLEAN {
     unsafe {
         match reason {
-            DLL_PROCESS_ATTACH => PHYSFS_init(std::ptr::null()) as BOOLEAN,
-            DLL_PROCESS_DETACH => PHYSFS_deinit() as BOOLEAN,
-            _ => 0,
+            DLL_PROCESS_ATTACH => {
+                if PHYSFS_init(std::ptr::null()) > 0 {
+                    let mut vec = vec![0 as CHAR; MAX_PATH as usize];
+                    let c_str = &mut vec[..];
+
+                    if GetCurrentDirectoryA(MAX_PATH as u32, c_str.as_mut_ptr() as *mut CHAR) > 0 {
+                        PHYSFS_setWriteDir(c_str.as_mut_ptr() as *mut CHAR);
+                        return TRUE;
+                    }
+                }
+
+                return FALSE;
+            }
+            DLL_PROCESS_DETACH => {
+                if PHYSFS_deinit() > 0 {
+                    return TRUE;
+                }
+
+                return FALSE;
+            }
+            _ => {
+                return TRUE;
+            }
         }
     }
 }
