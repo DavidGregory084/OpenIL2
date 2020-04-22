@@ -5,9 +5,9 @@
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 extern crate libc;
-use jni::*;
 use jni::objects::*;
-use jni::sys::{jint,jlong,jbyteArray};
+use jni::sys::{jbyteArray, jint, jlong};
+use jni::*;
 use winapi::shared::minwindef::{DWORD, HINSTANCE, LPVOID};
 use winapi::um::winnt::{BOOLEAN, DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH};
 
@@ -16,10 +16,12 @@ use winapi::um::winnt::{BOOLEAN, DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH};
 pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_fileLength(
     env: JNIEnv,
     obj: JObject,
-    fd: jint
+    fd: jint,
 ) -> jlong {
     unsafe {
-        let mut file = PHYSFS_File { opaque: fd as *mut libc::c_void };
+        let mut file = PHYSFS_File {
+            opaque: fd as *mut libc::c_void,
+        };
         return PHYSFS_fileLength(&mut file);
     }
 }
@@ -29,10 +31,12 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_fileLength(
 pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_tell(
     env: JNIEnv,
     obj: JObject,
-    fd: jint
+    fd: jint,
 ) -> jlong {
     unsafe {
-        let mut file = PHYSFS_File { opaque: fd as *mut libc::c_void };
+        let mut file = PHYSFS_File {
+            opaque: fd as *mut libc::c_void,
+        };
         return PHYSFS_tell(&mut file);
     }
 }
@@ -44,13 +48,19 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_readBytes(
     obj: JObject,
     fd: jint,
     java_buf: jbyteArray,
-    len: jint
+    len: jint,
 ) -> jint {
     unsafe {
-        let mut file = PHYSFS_File { opaque: fd as *mut libc::c_void };
+        let mut file = PHYSFS_File {
+            opaque: fd as *mut libc::c_void,
+        };
         let mut vec = vec![0 as i8; len as usize];
         let c_buf = &mut vec[..];
-        let res = PHYSFS_readBytes(&mut file, c_buf.as_mut_ptr() as *mut libc::c_void, len as PHYSFS_uint64) as jint;
+        let res = PHYSFS_readBytes(
+            &mut file,
+            c_buf.as_mut_ptr() as *mut libc::c_void,
+            len as PHYSFS_uint64,
+        ) as jint;
         env.set_byte_array_region(java_buf, 0, c_buf).unwrap();
         return res;
     }
@@ -61,7 +71,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_readBytes(
 pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_openRead(
     env: JNIEnv,
     obj: JObject,
-    file_name: JString
+    file_name: JString,
 ) -> jint {
     unsafe {
         let file_name_chars = env.get_string_utf_chars(file_name).unwrap();
@@ -76,10 +86,12 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_seek(
     env: JNIEnv,
     obj: JObject,
     fd: jint,
-    pos: jlong
+    pos: jlong,
 ) -> jint {
     unsafe {
-        let mut file = PHYSFS_File { opaque: fd as *mut libc::c_void };
+        let mut file = PHYSFS_File {
+            opaque: fd as *mut libc::c_void,
+        };
         return PHYSFS_seek(&mut file, pos as PHYSFS_uint64);
     }
 }
@@ -92,7 +104,9 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_close(
     fd: jint,
 ) -> jint {
     unsafe {
-        let mut file = PHYSFS_File { opaque: fd as *mut libc::c_void };
+        let mut file = PHYSFS_File {
+            opaque: fd as *mut libc::c_void,
+        };
         return PHYSFS_close(&mut file);
     }
 }
@@ -103,13 +117,13 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_mount(
     env: JNIEnv,
     class: JClass,
     file_name: JString,
-    append: jint
+    append: jint,
 ) -> jint {
     unsafe {
         return PHYSFS_mount(
             env.get_string_utf_chars(file_name).unwrap(),
             std::ptr::null(),
-            append
+            append,
         );
     }
 }
@@ -126,12 +140,12 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_getLastErrorCode(
 }
 
 #[no_mangle]
-extern "system" fn DllMain(_dllHandle: HINSTANCE, reason: DWORD, _:LPVOID) -> BOOLEAN {
+extern "system" fn DllMain(_dllHandle: HINSTANCE, reason: DWORD, _: LPVOID) -> BOOLEAN {
     unsafe {
         match reason {
             DLL_PROCESS_ATTACH => PHYSFS_init(std::ptr::null()) as BOOLEAN,
             DLL_PROCESS_DETACH => PHYSFS_deinit() as BOOLEAN,
-            _ => 0
+            _ => 0,
         }
     }
 }
