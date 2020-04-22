@@ -74,8 +74,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_openRead(
     file_name: JString,
 ) -> jint {
     unsafe {
-        let file_name_chars = env.get_string_utf_chars(file_name).unwrap();
-        let physfs_file = *PHYSFS_openRead(file_name_chars);
+        let physfs_file = *PHYSFS_openRead((**env.get_string(file_name).unwrap()).as_ptr());
         return physfs_file.opaque as jint;
     }
 }
@@ -121,7 +120,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_mount(
 ) -> jint {
     unsafe {
         return PHYSFS_mount(
-            env.get_string_utf_chars(file_name).unwrap(),
+            (**env.get_string(file_name).unwrap()).as_ptr(),
             std::ptr::null(),
             append,
         );
