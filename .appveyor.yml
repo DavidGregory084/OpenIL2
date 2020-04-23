@@ -20,5 +20,5 @@ on_success:
 cache:
   - '%USERPROFILE%\.m2'
   - '%USERPROFILE%\.gradle\caches'
-  - '%USERPROFILE%\.gradle\wrapper'
+  - '%USERPROFILE%\.gradle\wrapper -> gradlew.bat'
   - '%USERPROFILE%\.gradle\build-cache'
