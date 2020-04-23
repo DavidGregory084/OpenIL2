@@ -10,7 +10,6 @@ variables:
 stages:
   - test
   - build
-  - deploy
 
 before_script:
   - choco install -y jdk8 --x86
@@ -37,6 +36,3 @@ build:
   artifacts:
     paths:
       - target\release\physfs_jni.dll
-  trigger:
-    project: DavidGregory084/il2-physfs
-    branch: master
