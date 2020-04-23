@@ -185,8 +185,9 @@ extern "system" fn DllMain(dllHandle: HINSTANCE, reason: DWORD, reserved: LPVOID
                     let c_str = &mut vec[..];
 
                     if GetCurrentDirectoryA(MAX_PATH as u32, c_str.as_mut_ptr() as *mut CHAR) > 0 {
-                        PHYSFS_setWriteDir(c_str.as_mut_ptr() as *mut CHAR);
-                        return TRUE;
+                        if PHYSFS_setWriteDir(c_str.as_mut_ptr() as *mut CHAR) > 0 {
+                            return TRUE;
+                        }
                     }
                 }
 
