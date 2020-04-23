@@ -12,7 +12,7 @@ build_script:
   - cmd: .\gradlew.bat build
 
 test_script:
-  - cmd: .\gradlew.bat test
+  - cmd: .\gradlew.bat test --stacktrace
 
 on_success:
   - cmd: .\gradlew.bat --stop
