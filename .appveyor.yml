@@ -1,0 +1,14 @@
+image: Visual Studio 2019
+
+install:
+  - cinst jdk8 --x86
+  - ps: Invoke-WebRequest -Uri https://ci.appveyor.com/api/projects/dgregory084/physfs_jni/artifacts/target/release/physfs_jni.dll?branch=master -OutFile lib\physfs_jni.dll
+
+build_script:
+  - cmd: .\gradlew.bat build
+
+test_script:
+  - cmd: .\gradlew.bat test
+
+cache:
+  - '%USERPROFILE%\.m2'
