@@ -18,7 +18,7 @@ on_success:
   - cmd: .\gradlew.bat --stop
 
 on_finish:
-  - ps: Push-AppveyorArtifact .\build\reports\tests\test\index.html
+  - ps: Push-AppveyorArtifact .\build\reports\tests\test
 
 cache:
   - '%USERPROFILE%\.m2'
