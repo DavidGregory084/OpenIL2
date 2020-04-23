@@ -9,11 +9,8 @@ install:
   - ps: Invoke-RestMethod -Method Get -Uri https://ci.appveyor.com/api/projects/dgregory084/physfs-jni/artifacts/target/release/physfs_jni.dll?branch=master -OutFile .\lib\physfs_jni.dll -Headers @{ "Authorization" = "Bearer $APPVEYOR_TOKEN" }
 
 build_script:
-  - cmd: .\gradlew.bat build
-
-test_script:
   - cmd: java -version
-  - cmd: .\gradlew.bat  --stacktrace test
+  - cmd: .\gradlew.bat --stacktrace build
 
 on_success:
   - cmd: .\gradlew.bat --stop
