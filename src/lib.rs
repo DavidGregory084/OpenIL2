@@ -135,7 +135,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_mount(
 
 #[allow(unused_variables)]
 #[no_mangle]
-pub extern "system" fn Java_com_maddox_rts_PhysFS_mountAs(
+pub extern "system" fn Java_com_maddox_rts_PhysFS_mountAt(
     env: JNIEnv,
     class: JClass,
     file_name: JString,
@@ -150,6 +150,19 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_mountAs(
         );
     }
 }
+
+#[allow(unused_variables)]
+#[no_mangle]
+pub extern "system" fn Java_com_maddox_rts_PhysFS_unmount(
+    env: JNIEnv,
+    class: JClass,
+    file_name: JString
+) -> jint {
+    unsafe {
+        return PHYSFS_unmount((**env.get_string(file_name).unwrap()).as_ptr());
+    }
+}
+
 
 #[allow(unused_variables)]
 #[no_mangle]
