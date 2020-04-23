@@ -12,13 +12,14 @@ build_script:
   - cmd: .\gradlew.bat build
 
 test_script:
-  - cmd: .\gradlew.bat test --stacktrace
+  - cmd: .\gradlew.bat  --stacktrace test
 
 on_success:
   - cmd: .\gradlew.bat --stop
 
-on_finish:
-  - ps: Push-AppveyorArtifact .\build\reports\tests\test
+artifacts:
+  - path: build\reports\test\test
+    name: JUnit Test Report
 
 cache:
   - '%USERPROFILE%\.m2'
