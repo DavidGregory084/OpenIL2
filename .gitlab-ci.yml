@@ -9,7 +9,6 @@ stages:
 
 before_script:
   - choco install -y jdk8 --x86
-  - mkdir lib
   - curl -o lib\physfs_jni.dll -L https://gitlab.com/DavidGregory084/physfs_jni/-/jobs/artifacts/master/raw/target/release/physfs_jni.dll?job=build
 
 build:
