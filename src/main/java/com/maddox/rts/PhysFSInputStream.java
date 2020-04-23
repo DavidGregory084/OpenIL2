@@ -3,7 +3,7 @@ package com.maddox.rts;
 import java.io.InputStream;
 
 public class PhysFSInputStream extends InputStream {
-    int fd;
+    private int fd;
 
     public PhysFSInputStream(String file) {
         this.fd = openRead(file);

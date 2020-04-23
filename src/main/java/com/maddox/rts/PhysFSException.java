@@ -1,7 +1,11 @@
 package com.maddox.rts;
 
 public class PhysFSException extends RuntimeException {
-    int code;
+    private final int code;
+
+    public int getCode() {
+        return code;
+    }
 
     public PhysFSException(int code) {
         super(getErrorMessage(code));

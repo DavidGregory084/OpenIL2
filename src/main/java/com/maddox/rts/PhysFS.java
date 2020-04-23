@@ -1,7 +1,5 @@
 package com.maddox.rts;
 
-import java.io.IOException;
-
 public class PhysFS {
     public static final int ERR_OK = 0;
     public static final int ERR_OTHER_ERROR = 1;
@@ -34,15 +32,27 @@ public class PhysFS {
     public static final int ERR_BAD_PASSWORD = 28;
     public static final int ERR_APP_CALLBACK = 29;
 
-    public static int mount(String file) throws IOException {
+    public static int mount(String file) {
         return mount(file, true);
     }
 
-    private static int mount(String file, boolean append) throws IOException {
-        return mount(file, append ? 1 : 0);
+    public static int mountAt(String file, String mountPoint) {
+        return mountAt(file, mountPoint, true);
     }
 
-    private static native int mount(String file, int append) throws IOException;
+    public static native int unmount(String file);
+
+    public static int mount(String file, boolean appendToSearchPath) {
+        return mount(file, appendToSearchPath ? 1 : 0);
+    }
+
+    public static int mountAt(String file, String mountPoint, boolean appendToSearchPath) {
+        return mountAt(file, mountPoint, appendToSearchPath ? 1 : 0);
+    }
+
+    private static native int mount(String file, int appendToSearchPath);
+
+    private static native int mountAt(String file, String mountPoint, int appendToSearchPath);
 
     public static native int getLastErrorCode();
 
