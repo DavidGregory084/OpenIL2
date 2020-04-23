@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 fn main() {
     println!("cargo:rustc-link-search=native=lib");
-    println!("cargo:rustc-link-lib=static=physfs.lib");
+    println!("cargo:rustc-link-lib=static=physfs");
     println!("cargo:rerun-if-changed=physfs.h");
 
     let bindings = bindgen::Builder::default()
