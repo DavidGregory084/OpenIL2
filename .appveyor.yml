@@ -1,0 +1,19 @@
+image: Visual Studio 2019
+
+environment:
+  RUST_BACKTRACE: "1"
+
+install:
+  - ps: Invoke-WebRequest -Uri https://win.rustup.rs/i686 -OutFile rustup-init.exe
+  - ps: .\rustup-init.exe -y --profile minimal --default-toolchain stable --default-host i686-pc-windows-msvc
+  - ps: Set-Item -Path env:PATH -Value ($env:PATH + ";" + $env:USERPROFILE + ".cargo\bin")
+
+test_script:
+  - cmd: cargo test --verbose
+
+build_script:
+  - cmd: cargo build --release
+
+artifacts:
+  - path: target/release/physfs_jni.dll
+    name: PhysFS JNI DLL
