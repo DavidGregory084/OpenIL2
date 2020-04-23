@@ -16,3 +16,6 @@ test_script:
 
 cache:
   - '%USERPROFILE%\.m2'
+  - '%USERPROFILE%\.gradle\caches'
+  - '%USERPROFILE%\.gradle\wrapper'
+  - '%USERPROFILE%\.gradle\build-cache'
