@@ -20,5 +20,4 @@ artifacts:
     name: PhysFS JNI DLL
 
 cache:
-  - target
   - '%USERPROFILE%\.cargo'
