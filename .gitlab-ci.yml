@@ -1,9 +1,21 @@
-image: java:8
+.shared_windows_runners:
+  tags:
+  - shared-windows
+  - windows
+  - windows-1809
 
 stages:
   - build
 
+before_script:
+  - choco install -y jdk8 --x86
+  - mkdir lib
+  - curl -o lib\physfs_jni.dll -L https://gitlab.com/DavidGregory084/physfs_jni/-/jobs/artifacts/master/raw/target/release/physfs_jni.dll?job=build
+
 build:
+  extends:
+    - .shared_windows_runners
   stage: build
   script:
     - ./gradlew build
+    - ./gradlew test

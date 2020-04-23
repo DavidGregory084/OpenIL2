@@ -9,3 +9,7 @@ repositories {
 dependencies {
     implementation(files("data"))
 }
+
+tasks.withType<Test> {
+    systemProperty("java.library.path", "lib")
+}
