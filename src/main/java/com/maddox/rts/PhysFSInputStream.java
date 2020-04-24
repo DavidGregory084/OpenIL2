@@ -12,7 +12,6 @@ public class PhysFSInputStream extends InputStream {
         }
     }
 
-    @Override
     public int read() {
         if (this.fd != -1 && !endOfFile()) {
             byte[] buf = new byte[1];
@@ -28,7 +27,6 @@ public class PhysFSInputStream extends InputStream {
         }
     }
 
-    @Override
     public int available() {
         if (this.fd != -1) {
             long remaining = this.fileLength() - this.tell();
@@ -39,7 +37,6 @@ public class PhysFSInputStream extends InputStream {
         }
     }
 
-    @Override
     public long skip(long n) {
         if (this.fd != -1) {
             long currentPos = tell();
@@ -54,7 +51,6 @@ public class PhysFSInputStream extends InputStream {
         }
     }
 
-    @Override
     public int read(byte[] b) {
         if (this.fd != -1) {
             return readBytes(this.fd, b, b.length);
@@ -63,7 +59,6 @@ public class PhysFSInputStream extends InputStream {
         }
     }
 
-    @Override
     public void close() {
         if (this.fd != -1) {
             this.close(this.fd);
