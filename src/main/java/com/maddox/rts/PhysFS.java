@@ -32,6 +32,12 @@ public class PhysFS {
     public static final int ERR_BAD_PASSWORD = 28;
     public static final int ERR_APP_CALLBACK = 29;
 
+    public static boolean existsFile(String file) {
+        return exists(file) != 0;
+    }
+
+    private static native int exists(String file);
+
     public static void mountArchive(String file) {
         mountArchive(file, true);
     }
