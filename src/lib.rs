@@ -21,10 +21,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_fileLength(
     fd: jlong,
 ) -> jlong {
     unsafe {
-        let mut file = PHYSFS_File {
-            opaque: fd as *mut libc::c_void,
-        };
-        return PHYSFS_fileLength(&mut file);
+        return PHYSFS_fileLength(fd as *mut PHYSFS_File);
     }
 }
 
@@ -36,10 +33,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_tell(
     fd: jlong,
 ) -> jlong {
     unsafe {
-        let mut file = PHYSFS_File {
-            opaque: fd as *mut libc::c_void,
-        };
-        return PHYSFS_tell(&mut file);
+        return PHYSFS_tell(fd as *mut PHYSFS_File);
     }
 }
 
@@ -53,15 +47,11 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_readBytes(
     len: jint,
 ) -> jint {
     unsafe {
-        let mut file = PHYSFS_File {
-            opaque: fd as *mut libc::c_void,
-        };
-
         let mut vec = vec![0 as i8; len as usize];
         let c_buf = &mut vec[..];
 
         let res = PHYSFS_readBytes(
-            &mut file,
+            fd as *mut PHYSFS_File,
             c_buf.as_mut_ptr() as *mut libc::c_void,
             len as PHYSFS_uint64,
         ) as jint;
@@ -80,8 +70,8 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_openRead(
     file_name: JString,
 ) -> jlong {
     unsafe {
-        let physfs_file = *PHYSFS_openRead((**env.get_string(file_name).unwrap()).as_ptr());
-        return physfs_file.opaque as jlong;
+        let physfs_file = PHYSFS_openRead((**env.get_string(file_name).unwrap()).as_ptr());
+        return physfs_file as jlong;
     }
 }
 
@@ -94,10 +84,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_seek(
     pos: jlong,
 ) -> jint {
     unsafe {
-        let mut file = PHYSFS_File {
-            opaque: fd as *mut libc::c_void,
-        };
-        return PHYSFS_seek(&mut file, pos as PHYSFS_uint64);
+        return PHYSFS_seek(fd as *mut PHYSFS_File, pos as PHYSFS_uint64);
     }
 }
 
@@ -109,10 +96,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_close(
     fd: jlong,
 ) -> jint {
     unsafe {
-        let mut file = PHYSFS_File {
-            opaque: fd as *mut libc::c_void,
-        };
-        return PHYSFS_close(&mut file);
+        return PHYSFS_close(fd as *mut PHYSFS_File);
     }
 }
 
