@@ -44,6 +44,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_readBytes(
     obj: JObject,
     fd: jlong,
     java_buf: jbyteArray,
+    offset: jint,
     len: jint,
 ) -> jint {
     unsafe {
@@ -56,7 +57,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_readBytes(
             len as PHYSFS_uint64,
         ) as jint;
 
-        env.set_byte_array_region(java_buf, 0, c_buf).unwrap();
+        env.set_byte_array_region(java_buf, offset, c_buf).unwrap();
 
         return res;
     }
