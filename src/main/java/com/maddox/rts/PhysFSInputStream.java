@@ -118,7 +118,7 @@ public class PhysFSInputStream extends InputStream {
             long truncated = Math.min(remaining, Integer.MAX_VALUE);
             return (int) truncated;
         } else {
-            return -1;
+            return 0;
         }
     }
 
