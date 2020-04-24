@@ -4,8 +4,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -32,13 +31,10 @@ class PhysFSTests {
 
     @Test
     void inputStreamTell() throws IOException {
-        PhysFSInputStream is = new PhysFSInputStream("test.ini");
         long seekPosition = -1;
 
-        try {
+        try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
             seekPosition = is.tell();
-        } finally {
-            is.close();
         }
 
         assertEquals(0L, seekPosition, "Seek position was not zero for a newly opened file");
@@ -46,13 +42,10 @@ class PhysFSTests {
 
     @Test
     void inputStreamFileLength() throws IOException {
-        PhysFSInputStream is = new PhysFSInputStream("test.ini");
         long fileLength = -1;
 
-        try {
+        try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
             fileLength = is.fileLength();
-        } finally {
-            is.close();
         }
 
         assertTrue(fileLength > 0, "File length was not greater than zero for a test data file");
@@ -60,18 +53,10 @@ class PhysFSTests {
 
     @Test
     void inputStreamReadBytes() throws IOException {
-        PhysFSInputStream is = new PhysFSInputStream("test.ini");
-        byte[] buf = new byte[Math.min(Integer.MAX_VALUE, (int)is.fileLength())];
-        String expected = "[foo]\nbar=baz";
-
-        try {
-            is.read(buf);
-        } finally {
-            is.close();
+        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(new PhysFSInputStream("test.ini")))) {
+            assertEquals("[foo]", rdr.readLine());
+            assertEquals("bar=baz", rdr.readLine());
+            assertNull(rdr.readLine());
         }
-
-        String bufString = new String(buf);
-        assertFalse(bufString.isEmpty(), "Test file data was empty");
-        assertEquals(expected, bufString, "Test file data was not as expected");
     }
 }

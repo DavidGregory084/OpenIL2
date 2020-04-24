@@ -8,26 +8,20 @@ public class PhysFSInputStream extends InputStream {
     public PhysFSInputStream(String file) {
         this.fd = openRead(file);
         if (this.fd <= 0) {
-            throw new PhysFSException(PhysFS.getLastErrorCode());
+            throw new PhysFSException();
         }
     }
 
     @Override
     public int read() {
-        if (this.fd != -1) {
+        if (this.fd != -1 && !endOfFile()) {
             byte[] buf = new byte[1];
             int result = read(buf);
 
             if (result > 0) {
                 return buf[0];
             } else {
-                int lastError = PhysFS.getLastErrorCode();
-
-                if (lastError == PhysFS.ERR_OK) {
-                    return -1;
-                } else {
-                    throw new PhysFSException(lastError);
-                }
+                throw new PhysFSException();
             }
         } else {
             return -1;
@@ -94,7 +88,7 @@ public class PhysFSInputStream extends InputStream {
             if (pos >= 0) {
                 return pos;
             } else {
-                throw new PhysFSException(PhysFS.getLastErrorCode());
+                throw new PhysFSException();
             }
         } else {
             return -1;
@@ -107,21 +101,31 @@ public class PhysFSInputStream extends InputStream {
 
     private native int openRead(String file);
 
-    public int seek(long pos) {
+    public void seek(long pos) {
         if (this.fd != -1) {
             int res = seek(this.fd, pos);
 
             if (res != 0) {
-                return res;
+                return;
             } else {
-                throw new PhysFSException(PhysFS.getLastErrorCode());
+                throw new PhysFSException();
             }
         } else {
-            return -1;
+            return;
         }
     };
 
     private native int seek(long fileDescriptor, long pos);
+
+    public boolean endOfFile() {
+        if (this.fd != -1) {
+            return eof(this.fd) != 0;
+        } else {
+            return true;
+        }
+    }
+
+    private native int eof(long fileDescriptor);
 
     private native int close(long fileDescriptor);
 
