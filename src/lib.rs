@@ -88,6 +88,19 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_seek(
     }
 }
 
+
+#[allow(unused_variables)]
+#[no_mangle]
+pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_eof(
+    env: JNIEnv,
+    obj: JObject,
+    fd: jlong,
+) -> jint {
+    unsafe {
+        return PHYSFS_eof(fd as *mut PHYSFS_File);
+    }
+}
+
 #[allow(unused_variables)]
 #[no_mangle]
 pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_close(
