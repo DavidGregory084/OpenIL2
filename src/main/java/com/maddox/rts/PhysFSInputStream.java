@@ -48,15 +48,19 @@ public class PhysFSInputStream extends InputStream {
         }
     }
 
-    public int read(byte[] b) {
+    public int read(byte[] buf) {
+        return read(buf, 0, buf.length);
+    }
+
+    public int read(byte[] buf, int offset, int len) {
         if (this.fd != -1) {
-            return readBytes(this.fd, b, b.length);
+            return readBytes(this.fd, buf, offset, len);
         } else {
             return -1;
         }
     }
 
-    private native int readBytes(long fileDescriptor, byte[] buf, int len);
+    private native int readBytes(long fileDescriptor, byte[] buf, int offset, int len);
 
     public long fileLength() {
         if (this.fd != -1) {
