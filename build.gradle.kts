@@ -20,6 +20,3 @@ tasks.test {
     }
 }
 
-tasks.withType<Test> {
-    systemProperty("java.library.path", "lib")
-}

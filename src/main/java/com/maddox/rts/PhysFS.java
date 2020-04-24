@@ -32,22 +32,35 @@ public class PhysFS {
     public static final int ERR_BAD_PASSWORD = 28;
     public static final int ERR_APP_CALLBACK = 29;
 
-    public static int mount(String file) {
-        return mount(file, true);
+    public static void mountArchive(String file) {
+        mountArchive(file, true);
     }
 
-    public static int mountAt(String file, String mountPoint) {
-        return mountAt(file, mountPoint, true);
+    public static void mountArchiveAt(String file, String mountPoint) {
+        mountArchiveAt(file, mountPoint, true);
     }
 
-    public static native int unmount(String file);
-
-    public static int mount(String file, boolean appendToSearchPath) {
-        return mount(file, appendToSearchPath ? 1 : 0);
+    public static void unmountArchive(String file) {
+        int res = unmount(file);
+        if (res == 0) {
+            throw new PhysFSException(getLastErrorCode());
+        }
     }
 
-    public static int mountAt(String file, String mountPoint, boolean appendToSearchPath) {
-        return mountAt(file, mountPoint, appendToSearchPath ? 1 : 0);
+    private static native int unmount(String file);
+
+    public static void mountArchive(String file, boolean appendToSearchPath) {
+        int res = mount(file, appendToSearchPath ? 1 : 0);
+        if (res == 0) {
+            throw new PhysFSException(getLastErrorCode());
+        }
+    }
+
+    public static void mountArchiveAt(String file, String mountPoint, boolean appendToSearchPath) {
+        int res = mountAt(file, mountPoint, appendToSearchPath ? 1 : 0);
+        if (res == 0) {
+            throw new PhysFSException(getLastErrorCode());
+        }
     }
 
     private static native int mount(String file, int appendToSearchPath);
