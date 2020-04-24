@@ -12,6 +12,27 @@ public class PhysFSInputStream extends InputStream {
         }
     }
 
+    private native int openRead(String file);
+
+    public void close() {
+        if (this.fd != -1) {
+            this.close(this.fd);
+            this.fd = -1;
+        }
+    }
+
+    private native int close(long fileDescriptor);
+
+    public boolean endOfFile() {
+        if (this.fd != -1) {
+            return eof(this.fd) != 0;
+        } else {
+            return true;
+        }
+    }
+
+    private native int eof(long fileDescriptor);
+
     public int read() {
         if (this.fd != -1 && !endOfFile()) {
             byte[] buf = new byte[1];
@@ -26,6 +47,58 @@ public class PhysFSInputStream extends InputStream {
             return -1;
         }
     }
+
+    public int read(byte[] b) {
+        if (this.fd != -1) {
+            return readBytes(this.fd, b, b.length);
+        } else {
+            return -1;
+        }
+    }
+
+    private native int readBytes(long fileDescriptor, byte[] buf, int len);
+
+    public long fileLength() {
+        if (this.fd != -1) {
+            return fileLength(this.fd);
+        } else {
+            return -1;
+        }
+    }
+
+    private native long fileLength(long fileDescriptor);
+
+    public void seek(long pos) {
+        if (this.fd != -1) {
+            int res = seek(this.fd, pos);
+
+            if (res != 0) {
+                return;
+            } else {
+                throw new PhysFSException();
+            }
+        } else {
+            return;
+        }
+    };
+
+    private native int seek(long fileDescriptor, long pos);
+
+    public long tell() {
+        if (this.fd != -1) {
+            long pos = tell(this.fd);
+
+            if (pos >= 0) {
+                return pos;
+            } else {
+                throw new PhysFSException();
+            }
+        } else {
+            return -1;
+        }
+    }
+
+    private native long tell(long fileDescriptor);
 
     public int available() {
         if (this.fd != -1) {
@@ -50,79 +123,6 @@ public class PhysFSInputStream extends InputStream {
             return -1;
         }
     }
-
-    public int read(byte[] b) {
-        if (this.fd != -1) {
-            return readBytes(this.fd, b, b.length);
-        } else {
-            return -1;
-        }
-    }
-
-    public void close() {
-        if (this.fd != -1) {
-            this.close(this.fd);
-            this.fd = -1;
-        }
-    }
-
-    public long fileLength() {
-        if (this.fd != -1) {
-            return fileLength(this.fd);
-        } else {
-            return -1;
-        }
-    }
-
-    private native long fileLength(long fileDescriptor);
-
-    public long tell() {
-        if (this.fd != -1) {
-            long pos = tell(this.fd);
-
-            if (pos >= 0) {
-                return pos;
-            } else {
-                throw new PhysFSException();
-            }
-        } else {
-            return -1;
-        }
-    }
-
-    private native long tell(long fileDescriptor);
-
-    private native int readBytes(long fileDescriptor, byte[] buf, int len);
-
-    private native int openRead(String file);
-
-    public void seek(long pos) {
-        if (this.fd != -1) {
-            int res = seek(this.fd, pos);
-
-            if (res != 0) {
-                return;
-            } else {
-                throw new PhysFSException();
-            }
-        } else {
-            return;
-        }
-    };
-
-    private native int seek(long fileDescriptor, long pos);
-
-    public boolean endOfFile() {
-        if (this.fd != -1) {
-            return eof(this.fd) != 0;
-        } else {
-            return true;
-        }
-    }
-
-    private native int eof(long fileDescriptor);
-
-    private native int close(long fileDescriptor);
 
     protected void finalize() {
         if (this.fd != -1) {
