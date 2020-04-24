@@ -15,7 +15,7 @@ on_success:
   - cmd: .\gradlew.bat --stop
 
 artifacts:
-  - path: build\reports\test\test
+  - path: build\reports\tests\test
     name: JUnit Test Report
 
 cache:
