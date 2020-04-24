@@ -18,7 +18,7 @@ use winapi::um::winnt::{BOOLEAN, CHAR, DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH};
 pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_fileLength(
     env: JNIEnv,
     obj: JObject,
-    fd: jint,
+    fd: jlong,
 ) -> jlong {
     unsafe {
         let mut file = PHYSFS_File {
@@ -33,7 +33,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_fileLength(
 pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_tell(
     env: JNIEnv,
     obj: JObject,
-    fd: jint,
+    fd: jlong,
 ) -> jlong {
     unsafe {
         let mut file = PHYSFS_File {
@@ -48,7 +48,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_tell(
 pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_readBytes(
     env: JNIEnv,
     obj: JObject,
-    fd: jint,
+    fd: jlong,
     java_buf: jbyteArray,
     len: jint,
 ) -> jint {
@@ -78,10 +78,10 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_openRead(
     env: JNIEnv,
     obj: JObject,
     file_name: JString,
-) -> jint {
+) -> jlong {
     unsafe {
         let physfs_file = *PHYSFS_openRead((**env.get_string(file_name).unwrap()).as_ptr());
-        return physfs_file.opaque as jint;
+        return physfs_file.opaque as jlong;
     }
 }
 
@@ -90,7 +90,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_openRead(
 pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_seek(
     env: JNIEnv,
     obj: JObject,
-    fd: jint,
+    fd: jlong,
     pos: jlong,
 ) -> jint {
     unsafe {
@@ -106,7 +106,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_seek(
 pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_close(
     env: JNIEnv,
     obj: JObject,
-    fd: jint,
+    fd: jlong,
 ) -> jint {
     unsafe {
         let mut file = PHYSFS_File {
