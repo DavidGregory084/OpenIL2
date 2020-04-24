@@ -54,7 +54,15 @@ public class PhysFSInputStream extends InputStream {
 
     public int read(byte[] buf, int offset, int len) {
         if (this.fd != -1) {
-            return readBytes(this.fd, buf, offset, len);
+            int res =  readBytes(this.fd, buf, offset, len);
+
+            if (res > 0) {
+                return res;
+            } else if (endOfFile()) {
+                return -1;
+            } else {
+                throw new PhysFSException();
+            }
         } else {
             return -1;
         }
