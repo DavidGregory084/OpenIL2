@@ -10,9 +10,9 @@ install:
 
 build_script:
   - cmd: .\gradlew.bat build
+  - cmd: .\gradlew.bat jacocoTestReport
 
 on_success:
-  - cmd: .\gradlew.bat jacocoTestReport
   - cmd: .\gradlew.bat --stop
 
 artifacts:
