@@ -129,7 +129,7 @@ class PhysFSTests {
         try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
             byte[] buf = new byte[10];
             assertThrows(
-                    PhysFSException.class,
+                    IndexOutOfBoundsException.class,
                     () -> is.read(buf, 0, 13),
                     "Reading too many bytes for the buffer length didn't throw exception");
         }
