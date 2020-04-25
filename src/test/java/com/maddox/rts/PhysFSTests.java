@@ -46,6 +46,16 @@ class PhysFSTests {
     }
 
     @Test
+    void fileExistsOnceMountedAtPath() {
+        try {
+            PhysFS.mountArchiveAt(testFiles2Path.toString(), "data");
+            assertTrue(PhysFS.existsFile("data/test2.ini"));
+        } finally {
+            PhysFS.unmountArchive(testFiles2Path.toString());
+        }
+    }
+
+    @Test
     void inputStreamTell() throws IOException {
         long seekPosition = -1;
 
