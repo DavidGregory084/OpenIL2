@@ -1,5 +1,6 @@
 package com.maddox.rts;
 
+import java.io.File;
 import java.io.InputStream;
 
 public class PhysFSInputStream extends InputStream {
@@ -10,6 +11,10 @@ public class PhysFSInputStream extends InputStream {
         if (this.fd <= 0) {
             throw new PhysFSException();
         }
+    }
+
+    public PhysFSInputStream(File file) {
+        this(file.getPath());
     }
 
     private native int openRead(String file);

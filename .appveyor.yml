@@ -27,7 +27,6 @@ artifacts:
   - path: build\reports\jacoco\test
     name: Jacoco Coverage Report
 
-
 cache:
   - '%USERPROFILE%\.m2'
   - '%USERPROFILE%\.gradle\caches'
