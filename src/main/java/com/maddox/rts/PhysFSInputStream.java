@@ -55,6 +55,8 @@ public class PhysFSInputStream extends InputStream {
     public int read(byte[] buf, int offset, int len) {
         if (offset < 0 || len < 0 || buf.length < len + offset) {
             throw new IndexOutOfBoundsException();
+        } else if (len == 0) {
+            return 0;
         } else if (this.fd != -1) {
             int res =  readBytes(this.fd, buf, offset, len);
 
