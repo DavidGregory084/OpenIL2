@@ -4,8 +4,11 @@ environment:
   JAVA_HOME: 'C:\Program Files (x86)\Java\jdk1.8.0'
   APPVEYOR_TOKEN:
     secure: vl0Tyf7ckkyu3xLXvwbRSdZjt6AdKd3gtvs1Ukiegcc=
+  CODECOV_TOKEN:
+    secure: aHKv38h1MKAMOolwQGsZlQj0500zu+nYgFhI3N6sVyVIHbcNLUtENCTpCXiUGru1
 
 install:
+  - cinst codecov
   - ps: Invoke-RestMethod -Method Get -Uri https://ci.appveyor.com/api/projects/dgregory084/physfs-jni/artifacts/target/release/physfs_jni.dll?branch=master -OutFile physfs_jni.dll -Headers @{ "Authorization" = "Bearer $APPVEYOR_TOKEN" }
 
 build_script:

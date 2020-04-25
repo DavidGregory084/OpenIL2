@@ -26,3 +26,8 @@ tasks.test {
     }
 }
 
+tasks.jacocoTestReport {
+    reports {
+        xml.setEnabled(true)
+    }
+}
