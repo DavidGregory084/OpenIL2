@@ -173,5 +173,17 @@ class PhysFSTests {
         }
     }
 
-
+    @Test
+    void inputStreamReadSecondFileBuffered() throws IOException {
+        try {
+            PhysFS.mountArchive(testFiles2Path.toString());
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(new PhysFSInputStream("test2.ini")))) {
+                assertEquals("[test]", rdr.readLine(), "Data read from first line was not as expected");
+                assertEquals("data=here", rdr.readLine(), "Data read from second line was not as expected");
+                assertNull(rdr.readLine(), "Data unexpectedly read after end of file");
+            }
+        } finally {
+            PhysFS.unmountArchive(testFiles2Path.toString());
+        }
+    }
 }
