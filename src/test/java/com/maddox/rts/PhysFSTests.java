@@ -12,8 +12,8 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PhysFSTests {
-    Path testFilesPath = Paths.get("test-data").resolve("test-files.sfs");
-    Path testFiles2Path = Paths.get("test-data").resolve("test-files2.sfs");
+    private Path testFilesPath = Paths.get("test-data").resolve("test-files.sfs");
+    private Path testFiles2Path = Paths.get("test-data").resolve("test-files2.sfs");
 
     @BeforeEach
     void beforeEach() {
