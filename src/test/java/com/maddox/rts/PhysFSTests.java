@@ -41,6 +41,43 @@ class PhysFSTests {
     }
 
     @Test
+    void inputStreamSeek() {
+        long expectedPosition = -1;
+        long actualPosition = -1;
+
+        try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
+            expectedPosition = is.fileLength() / 2;
+            is.seek(expectedPosition);
+            actualPosition = is.tell();
+        }
+
+        assertTrue(actualPosition > 0, "Seek position remains at start of file after seeking");
+        assertEquals(expectedPosition, actualPosition, "Seek position was not set as required");
+    }
+
+    @Test
+    void inputStreamSeekEof() {
+        long seekPosition = -1;
+        long fileLength = 0;
+
+        try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
+            fileLength = is.fileLength();
+            is.seek(fileLength);
+            seekPosition = is.tell();
+        }
+
+        assertEquals(seekPosition, fileLength, "Seek position was not set to end of file on request");
+    }
+
+    @Test
+    void inputStreamEndOfFile() {
+        try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
+            is.seek(is.fileLength());
+            assertTrue(is.endOfFile(), "End of file condition was not set when seeking to end of file");
+        }
+    }
+
+    @Test
     void inputStreamFileLength() throws IOException {
         long fileLength = -1;
 
