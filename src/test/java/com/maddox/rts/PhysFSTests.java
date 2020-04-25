@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PhysFSTests {
     Path testFilesPath = Paths.get("test-data").resolve("test-files.sfs");
+    Path testFiles2Path = Paths.get("test-data").resolve("test-files2.sfs");
 
     @BeforeEach
     void beforeEach() {
@@ -27,6 +28,21 @@ class PhysFSTests {
     @Test
     void existsFile() {
         assertTrue(PhysFS.existsFile("test.ini"));
+    }
+
+    @Test
+    void unmountedFileNotExists() {
+        assertFalse(PhysFS.existsFile("test2.ini"));
+    }
+
+    @Test
+    void fileExistsOnceMounted() {
+        try {
+            PhysFS.mountArchive(testFiles2Path.toString());
+            assertTrue(PhysFS.existsFile("test2.ini"));
+        } finally {
+            PhysFS.unmountArchive(testFiles2Path.toString());
+        }
     }
 
     @Test
@@ -146,4 +162,6 @@ class PhysFSTests {
             assertEquals("  [foo]\nbar=baz", new String(buf), "Data read from file was not as expected");
         }
     }
+
+
 }
