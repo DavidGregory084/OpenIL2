@@ -121,7 +121,7 @@ class PhysFSTests {
             buf[0] = asciiSpace;
             buf[1] = asciiSpace;
             is.read(buf, 2, 13);
-            assertEquals("[foo]\nbar=baz", new String(buf), "Data read from file was not as expected");
+            assertEquals("  [foo]\nbar=baz", new String(buf), "Data read from file was not as expected");
         }
     }
 }
