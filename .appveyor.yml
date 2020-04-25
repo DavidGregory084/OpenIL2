@@ -12,11 +12,15 @@ build_script:
   - cmd: .\gradlew.bat build
 
 on_success:
+  - cmd: .\gradlew.bat jacocoTestReport
   - cmd: .\gradlew.bat --stop
 
 artifacts:
   - path: build\reports\tests\test
     name: JUnit Test Report
+  - path: build\reports\jacoco\test
+    name: Jacoco Coverage Report
+
 
 cache:
   - '%USERPROFILE%\.m2'
