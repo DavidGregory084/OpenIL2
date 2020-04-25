@@ -117,13 +117,21 @@ class PhysFSTests {
     }
 
     @Test
-    void inputStreamReadTooManyBytes() throws IOException {
+    void inputStreamReadBytesWithExcessBuffer() throws IOException {
         try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
             byte[] buf = new byte[15];
+            assertEquals(13, is.read(buf), "Data length read from file was not as expected");
+        }
+    }
+
+    @Test
+    void inputStreamReadBytesBufferTooSmall() throws IOException {
+        try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
+            byte[] buf = new byte[10];
             assertThrows(
                     PhysFSException.class,
-                    () -> is.read(buf),
-                    "Reading too many bytes from file didn't throw exception");
+                    () -> is.read(buf, 0, 13),
+                    "Reading too many bytes for the buffer length didn't throw exception");
         }
     }
 
