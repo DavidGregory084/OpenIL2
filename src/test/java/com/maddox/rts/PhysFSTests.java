@@ -70,6 +70,13 @@ class PhysFSTests {
     }
 
     @Test
+    void inputStreamSeekAfterEof() {
+        try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
+            assertThrows(PhysFSException.class, () -> is.seek(is.fileLength() + 1));
+        }
+    }
+
+    @Test
     void inputStreamEndOfFile() {
         try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
             is.seek(is.fileLength());
