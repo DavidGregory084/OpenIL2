@@ -92,15 +92,36 @@ class PhysFSTests {
             fileLength = is.fileLength();
         }
 
-        assertTrue(fileLength > 0, "File length was not greater than zero for a test data file");
+        assertEquals(13, fileLength, "File length was not as expected for the test data file");
+    }
+
+    @Test
+    void inputStreamReadBuffered() throws IOException {
+        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(new PhysFSInputStream("test.ini")))) {
+            assertEquals("[foo]", rdr.readLine(), "Data read from first line was not as expected");
+            assertEquals("bar=baz", rdr.readLine(), "Data read from second line was not as expected");
+            assertNull(rdr.readLine(), "Data unexpectedly read after end of file");
+        }
     }
 
     @Test
     void inputStreamReadBytes() throws IOException {
-        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(new PhysFSInputStream("test.ini")))) {
-            assertEquals("[foo]", rdr.readLine());
-            assertEquals("bar=baz", rdr.readLine());
-            assertNull(rdr.readLine());
+        try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
+            byte[] buf = new byte[13];
+            is.read(buf);
+            assertEquals("[foo]\nbar=baz", new String(buf), "Data read from file was not as expected");
+        }
+    }
+
+    @Test
+    void inputStreamReadBytesOffset() throws IOException {
+        try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
+            byte asciiSpace = (byte)'\u0020';
+            byte[] buf = new byte[15];
+            buf[0] = asciiSpace;
+            buf[1] = asciiSpace;
+            is.read(buf, 2, 13);
+            assertEquals("[foo]\nbar=baz", new String(buf), "Data read from file was not as expected");
         }
     }
 }
