@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class PhysFSTests {
     private Path testFilesPath = Paths.get("test-data").resolve("test-files.sfs");
     private Path testFiles2Path = Paths.get("test-data").resolve("test-files2.sfs");
+    private Path nonExistentPath = Paths.get("test-data").resolve("test-files-missing.sfs");
 
     @BeforeEach
     void beforeEach() {
@@ -27,19 +28,35 @@ class PhysFSTests {
 
     @Test
     void existsFile() {
-        assertTrue(PhysFS.existsFile("test.ini"));
+        assertTrue(PhysFS.existsFile("test.ini"), "A file from a mounted archive did not show as existing");
+    }
+
+    @Test
+    void mountNonExistentArchive() {
+        assertThrows(
+                PhysFSException.class,
+                () -> PhysFS.mountArchive(nonExistentPath.toString()),
+                "Attempting to mount a nonexistent path didn't throw an exception");
+    }
+
+    @Test
+    void unmountNonMountedArchive() {
+        assertThrows(
+                PhysFSException.class,
+                () -> PhysFS.unmountArchive(testFiles2Path.toString()),
+                "Attempting to unmount a non-mounted archive didn't throw an exception");
     }
 
     @Test
     void unmountedFileNotExists() {
-        assertFalse(PhysFS.existsFile("test2.ini"));
+        assertFalse(PhysFS.existsFile("test2.ini"), "A file from an unmounted archive showed as existing");
     }
 
     @Test
     void fileExistsOnceMounted() {
         try {
             PhysFS.mountArchive(testFiles2Path.toString());
-            assertTrue(PhysFS.existsFile("test2.ini"));
+            assertTrue(PhysFS.existsFile("test2.ini"), "A file did not show as existing after its archive was mounted");
         } finally {
             PhysFS.unmountArchive(testFiles2Path.toString());
         }
@@ -49,10 +66,18 @@ class PhysFSTests {
     void fileExistsOnceMountedAtPath() {
         try {
             PhysFS.mountArchiveAt(testFiles2Path.toString(), "data");
-            assertTrue(PhysFS.existsFile("data/test2.ini"));
+            assertTrue(PhysFS.existsFile("data/test2.ini"), "A file did not show as existing after its archive was mounted at a mountpoint");
         } finally {
             PhysFS.unmountArchive(testFiles2Path.toString());
         }
+    }
+
+    @Test
+    void inputStreamOpenUnmountedFile() {
+        assertThrows(
+                PhysFSException.class,
+                () -> new PhysFSInputStream("test2.ini"),
+                "Attempting to open a file from an unmounted archive didn't throw an exception");
     }
 
     @Test
