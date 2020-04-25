@@ -72,7 +72,10 @@ class PhysFSTests {
     @Test
     void inputStreamSeekAfterEof() {
         try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
-            assertThrows(PhysFSException.class, () -> is.seek(is.fileLength() + 1));
+            assertThrows(
+                    PhysFSException.class,
+                    () -> is.seek(is.fileLength() + 1),
+                    "Seeking after end of file didn't throw exception");
         }
     }
 
@@ -110,6 +113,17 @@ class PhysFSTests {
             byte[] buf = new byte[13];
             is.read(buf);
             assertEquals("[foo]\nbar=baz", new String(buf), "Data read from file was not as expected");
+        }
+    }
+
+    @Test
+    void inputStreamReadTooManyBytes() throws IOException {
+        try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
+            byte[] buf = new byte[15];
+            assertThrows(
+                    PhysFSException.class,
+                    () -> is.read(buf),
+                    "Reading too many bytes from file didn't throw exception");
         }
     }
 
