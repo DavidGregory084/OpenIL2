@@ -8,6 +8,9 @@ environment:
 build_script:
   - cmd: .\gradlew.bat build
 
+on_success:
+  - cmd: .\gradlew.bat --stop
+
 artifacts:
   - path: build\libs\il2-classload-agent.jar
     name: Java Agent JAR
