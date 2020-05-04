@@ -5,11 +5,13 @@ import java.io.InputStream;
 
 public class PhysFSInputStream extends InputStream {
     private long fd;
+    private final String fileName;
 
     public PhysFSInputStream(String file) {
         this.fd = openRead(file);
+        this.fileName = file;
         if (this.fd <= 0) {
-            throw new PhysFSException();
+            throw new PhysFSException("while opening file " + file);
         }
     }
 
@@ -46,7 +48,7 @@ public class PhysFSInputStream extends InputStream {
             if (result > 0) {
                 return buf[0];
             } else {
-                throw new PhysFSException();
+                throw new PhysFSException("while reading from file " + this.fileName);
             }
         } else {
             return -1;
@@ -70,7 +72,7 @@ public class PhysFSInputStream extends InputStream {
             } else if (endOfFile()) {
                 return -1;
             } else {
-                throw new PhysFSException();
+                throw new PhysFSException("while reading from file " + this.fileName);
             }
         } else {
             return -1;
@@ -96,7 +98,7 @@ public class PhysFSInputStream extends InputStream {
             if (res != 0) {
                 return;
             } else {
-                throw new PhysFSException();
+                throw new PhysFSException("while seeking in file " + this.fileName);
             }
         } else {
             return;
@@ -112,7 +114,7 @@ public class PhysFSInputStream extends InputStream {
             if (pos >= 0) {
                 return pos;
             } else {
-                throw new PhysFSException();
+                throw new PhysFSException("while fetching seek position in file " + this.fileName);
             }
         } else {
             return -1;

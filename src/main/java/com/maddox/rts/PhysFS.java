@@ -41,7 +41,7 @@ public class PhysFS {
     public static void mountArchive(String file, boolean appendToSearchPath) {
         int res = mount(file, appendToSearchPath ? 1 : 0);
         if (res == 0) {
-            throw new PhysFSException();
+            throw new PhysFSException("while mounting file " + file);
         }
     }
 
@@ -54,7 +54,7 @@ public class PhysFS {
     public static void mountArchiveAt(String file, String mountPoint, boolean appendToSearchPath) {
         int res = mountAt(file, mountPoint, appendToSearchPath ? 1 : 0);
         if (res == 0) {
-            throw new PhysFSException();
+            throw new PhysFSException("while mounting file " + file + " at mount point " + mountPoint);
         }
     }
 
@@ -69,7 +69,7 @@ public class PhysFS {
     public static void unmountArchive(String file) {
         int res = unmount(file);
         if (res == 0) {
-            throw new PhysFSException();
+            throw new PhysFSException("while unmounting file " + file);
         }
     }
 

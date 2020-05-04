@@ -8,11 +8,20 @@ public class PhysFSException extends RuntimeException {
     }
 
     public PhysFSException() {
-       this(PhysFS.getLastErrorCode());
+        this(PhysFS.getLastErrorCode());
+    }
+
+    public PhysFSException(String message) {
+        this(PhysFS.getLastErrorCode(), message);
     }
 
     public PhysFSException(int code) {
         super(getErrorMessage(code));
+        this.code = code;
+    }
+
+    public PhysFSException(int code, String message) {
+        super("Error '" + getErrorMessage(code) + "' " + message);
         this.code = code;
     }
 
