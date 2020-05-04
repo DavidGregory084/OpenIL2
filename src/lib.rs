@@ -190,13 +190,13 @@ extern "system" fn DllMain(dllHandle: HINSTANCE, reason: DWORD, reserved: LPVOID
     unsafe {
         match reason {
             DLL_PROCESS_ATTACH => {
-                if PHYSFS_init(std::ptr::null()) > 0 {
+                if PHYSFS_init(std::ptr::null()) != 0 {
                     let mut vec = vec![0 as CHAR; MAX_PATH as usize];
                     let c_str = &mut vec[..];
 
                     if GetCurrentDirectoryA(MAX_PATH as u32, c_str.as_mut_ptr() as *mut CHAR) > 0 {
-                        if PHYSFS_setWriteDir(c_str.as_mut_ptr() as *mut CHAR) > 0 {
-                            if PHYSFS_addToSearchPath(c_str.as_mut_ptr() as *mut CHAR, 0) > 0 {
+                        if PHYSFS_setWriteDir(c_str.as_mut_ptr() as *mut CHAR) != 0 {
+                            if PHYSFS_addToSearchPath(c_str.as_mut_ptr() as *mut CHAR, 0) != 0 {
                                 return TRUE;
                             }
                         }
