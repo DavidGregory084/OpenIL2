@@ -196,7 +196,9 @@ extern "system" fn DllMain(dllHandle: HINSTANCE, reason: DWORD, reserved: LPVOID
 
                     if GetCurrentDirectoryA(MAX_PATH as u32, c_str.as_mut_ptr() as *mut CHAR) > 0 {
                         if PHYSFS_setWriteDir(c_str.as_mut_ptr() as *mut CHAR) > 0 {
-                            return TRUE;
+                            if PHYSFS_addToSearchPath(c_str.as_mut_ptr() as *mut CHAR, 0) > 0 {
+                                return TRUE;
+                            }
                         }
                     }
                 }
