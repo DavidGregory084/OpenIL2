@@ -8,10 +8,12 @@ extern crate libc;
 use jni::objects::*;
 use jni::sys::{jbyteArray, jint, jlong};
 use jni::*;
-use winapi::shared::minwindef::{DWORD, HINSTANCE, LPVOID, MAX_PATH};
+use winapi::shared::minwindef::{BOOL, DWORD, HINSTANCE, LPCVOID, LPVOID, MAX_PATH};
 use winapi::shared::ntdef::{FALSE, TRUE};
 use winapi::um::processenv::GetCurrentDirectoryA;
-use winapi::um::winnt::{BOOLEAN, CHAR, DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH};
+use winapi::um::winbase::{FILE_BEGIN, FILE_CURRENT, FILE_END};
+use winapi::um::fileapi::{INVALID_SET_FILE_POINTER};
+use winapi::um::winnt::{BOOLEAN, CHAR, DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, HANDLE, LONG, LPCSTR};
 
 #[allow(unused_variables)]
 #[no_mangle]
@@ -182,6 +184,96 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_getLastErrorCode(
     unsafe {
         return PHYSFS_getLastErrorCode();
     }
+}
+
+#[repr(C)]
+struct RTSInterface {
+    get_current_real_time: unsafe extern fn() -> i64,
+    get_current_game_time: unsafe extern fn() -> i64,
+    open_file: unsafe fn(LPCSTR) -> i32,
+    read_file: unsafe fn(HANDLE, LPVOID, DWORD) -> BOOL,
+    write_file: unsafe fn(HANDLE, LPCVOID, DWORD) -> BOOL,
+    seek_file: unsafe fn(HANDLE, LONG, DWORD) -> DWORD,
+    close_file: unsafe fn(HANDLE) -> i32
+}
+
+#[link(name = "rts", kind = "dylib")]
+extern "C" {
+    #[link_name = "_RTS_GetCurrentGameTime@0"]
+    fn RTS_GetCurrentGameTime() -> i64;
+    #[link_name = "_RTS_GetCurrentRealTime@0"]
+    fn RTS_GetCurrentRealTime() -> i64;
+}
+
+unsafe fn open_file(file_name: LPCSTR) -> i32 {
+    return PHYSFS_openAppend(file_name) as i32;
+}
+
+unsafe fn read_file(handle: HANDLE, buf: LPVOID, bytes_to_read: DWORD) -> BOOL {
+    return PHYSFS_readBytes(handle as *mut PHYSFS_File, buf, bytes_to_read.into()) as BOOL;
+}
+
+unsafe fn write_file(handle: HANDLE, buf: LPCVOID, bytes_to_write: DWORD) -> BOOL {
+    return PHYSFS_writeBytes(handle as *mut PHYSFS_File, buf, bytes_to_write.into()) as BOOL;
+}
+
+unsafe fn seek_file(handle: HANDLE, pos: LONG, move_method: DWORD) -> DWORD {
+    if move_method == FILE_BEGIN {
+        if PHYSFS_seek(handle as *mut PHYSFS_File, pos as u64) != 0 {
+            return PHYSFS_tell(handle as *mut PHYSFS_File) as DWORD;
+        } else {
+            return INVALID_SET_FILE_POINTER;
+        }
+    } else if move_method == FILE_CURRENT {
+        let current_pos = PHYSFS_tell(handle as *mut PHYSFS_File);
+        if current_pos != 0 {
+            let desired_pos = current_pos as u64 + pos as u64;
+            if PHYSFS_seek(handle as *mut PHYSFS_File, desired_pos) > 0 {
+                return PHYSFS_tell(handle as *mut PHYSFS_File) as DWORD;
+            } else {
+                return INVALID_SET_FILE_POINTER
+            }
+        } else {
+            return INVALID_SET_FILE_POINTER;
+        }
+    } else if move_method == FILE_END {
+        let file_length = PHYSFS_fileLength(handle as *mut PHYSFS_File);
+        if file_length > 0 {
+            let desired_pos = file_length as u64 + pos as u64;
+            if PHYSFS_seek(handle as *mut PHYSFS_File, desired_pos) > 0 {
+                return PHYSFS_tell(handle as *mut PHYSFS_File) as DWORD;
+            } else {
+                return INVALID_SET_FILE_POINTER
+            }
+        } else {
+            return INVALID_SET_FILE_POINTER;
+        }
+    } else {
+        return INVALID_SET_FILE_POINTER;
+    }
+}
+
+unsafe fn close_file(handle: HANDLE) -> BOOL {
+    return PHYSFS_close(handle as *mut PHYSFS_File) as BOOL;
+}
+
+#[allow(unused_variables)]
+#[no_mangle]
+pub extern "system" fn Java_com_maddox_rts_RTS_interf(
+    env: JNIEnv,
+    class: JClass,
+) -> jint {
+    let mut rts_interface = RTSInterface {
+        get_current_real_time: RTS_GetCurrentRealTime,
+        get_current_game_time: RTS_GetCurrentGameTime,
+        open_file: open_file,
+        read_file: read_file,
+        write_file: write_file,
+        seek_file: seek_file,
+        close_file: close_file
+    };
+
+    return &mut rts_interface as *mut RTSInterface as jint;
 }
 
 #[allow(unused_variables)]

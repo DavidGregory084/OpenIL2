@@ -4,7 +4,6 @@ version = "0.1.0"
 authors = ["David Gregory <davidgregory084@gmail.com>"]
 edition = "2018"
 build = "build.rs"
-links = "physfs"
 
 [lib]
 crate-type = ["cdylib"]
