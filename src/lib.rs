@@ -1,5 +1,4 @@
 pub mod finger;
-
 use flate2::bufread::*;
 use memmap::Mmap;
 use nom::bytes::complete::*;
@@ -18,7 +17,7 @@ pub struct SfsFile {
     pub mmap: Mmap,
     pub header: SfsHeader,
     pub toc: Vec<SfsTocItem>,
-    pub chunk_boundaries:  Vec<(usize, usize)>
+    pub chunk_boundaries: Vec<(usize, usize)>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -32,7 +31,7 @@ pub struct SfsHeader {
     pub chunk_table_end: u32,
     pub uncompressed_size: u32,
     pub unknown: u16,
-    pub comment: String
+    pub comment: String,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -75,7 +74,7 @@ pub fn parse_header<'a>(input: &'a [u8]) -> nom::IResult<&'a [u8], SfsHeader> {
             chunk_table_end,
             uncompressed_size,
             unknown,
-            comment
+            comment,
         },
     ))
 }
@@ -97,7 +96,7 @@ pub fn parse_toc_item(input: &[u8]) -> nom::IResult<&[u8], SfsTocItem> {
             size,
             unknown_1,
             attributes,
-            unknown_2
+            unknown_2,
         },
     ))
 }
@@ -108,27 +107,6 @@ pub fn parse_toc<'a>(
 ) -> nom::IResult<&'a [u8], Vec<SfsTocItem>> {
     let toc_count = header.toc_count as usize;
     many_m_n(toc_count, toc_count, parse_toc_item)(input)
-}
-
-pub fn sfs_hash(hash: u64, buf: &[u8]) -> u64 {
-    // Extract the bottom and top bytes separately
-    let bottom = (hash & 0xFFFFFFFF) as u32;
-    let top = (hash >> 32 & 0xFFFFFFFF) as u32;
-
-    // Update the hash using the input
-    let (new_bottom, new_top) = buf.iter().fold((bottom, top), |(b, t), byte| {
-        let bt = *byte as u32;
-        let new_bottom = ((b << 8) | bt) ^ finger::BOTTOM_TABLE[(b >> 24) as usize];
-        let new_top = ((t << 8) | bt) ^ finger::TOP_TABLE[(t >> 24) as usize];
-        (new_bottom, new_top)
-    });
-
-    // Convert back to u64
-    let bot_64 = new_bottom as u64;
-    let top_64 = new_top as u64;
-
-    // Combine back together
-    return bot_64 & 0xFFFFFFFF | top_64 << 32;
 }
 
 pub fn sfs_decrypt(hash: u64, buf: &[u8]) -> Vec<u8> {
@@ -181,9 +159,9 @@ pub fn read_sfs(path: &Path) -> Result<SfsFile> {
     let header_slice = &mmap[0..256];
 
     let header_hash = if header.version == 0xCA {
-        sfs_hash(0, file_name.to_lowercase().as_bytes())
+        finger::bytes(0, file_name.to_lowercase().as_bytes())
     } else {
-        sfs_hash(0, header_slice)
+        finger::bytes(0, header_slice)
     };
 
     // On version 202 (0xCA) we have to do some additional decryption
@@ -260,23 +238,23 @@ pub fn read_sfs(path: &Path) -> Result<SfsFile> {
         .collect();
 
     let chunk_boundaries: Vec<(usize, usize)> = chunk_offsets[1..]
-        .iter().scan(chunk_table_end, |last, next| {
+        .iter()
+        .scan(chunk_table_end, |last, next| {
             let last_offset = *last;
             let next_offset = *next as usize;
             *last = next_offset;
             return Some((last_offset, next_offset));
-        }).collect();
+        })
+        .collect();
 
     println!("{:?}", decrypted_header);
 
-    Ok(
-        SfsFile {
-            mmap,
-            header: decrypted_header,
-            toc,
-            chunk_boundaries
-        }
-    )
+    Ok(SfsFile {
+        mmap,
+        header: decrypted_header,
+        toc,
+        chunk_boundaries,
+    })
 }
 
 pub fn decompress_chunk(sfs_file: &SfsFile, boundary: (usize, usize)) -> Vec<u8> {
@@ -288,30 +266,46 @@ pub fn decompress_chunk(sfs_file: &SfsFile, boundary: (usize, usize)) -> Vec<u8>
         chunk.to_vec()
     } else if chunk[0] == 1 {
         panic!("Can't do LZSS yet!")
-        // let mut decoder = ZlibDecoder::new(&chunk[1..]);
-        // let mut buffer = Vec::new();
-        // decoder.read_to_end(&mut buffer).expect("Error decoding chunk");
-        // buffer
+    // let mut decoder = ZlibDecoder::new(&chunk[1..]);
+    // let mut buffer = Vec::new();
+    // decoder.read_to_end(&mut buffer).expect("Error decoding chunk");
+    // buffer
     } else if chunk[1] == 8 {
         let mut decoder = DeflateDecoder::new(&chunk[3..]);
         let mut buffer = Vec::new();
-        decoder.read_to_end(&mut buffer).expect("Error decoding chunk");
+        decoder
+            .read_to_end(&mut buffer)
+            .expect("Error decoding chunk");
         buffer
     } else {
-        println!("Decompressing unknown chunk type {:?}", chunk[0..1].to_vec());
+        println!(
+            "Decompressing unknown chunk type {:?}",
+            chunk[0..1].to_vec()
+        );
         chunk.to_vec()
     }
 }
 
-pub fn unpack_from_sfs_by_hash(sfs_file: &SfsFile, decompressed: &Vec<u8>, hash: u64) -> std::io::Result<Vec<u8>> {
-    let toc_item = sfs_file.toc.iter().find(|item| {
-        return item.hash == hash;
-    }).expect("Couldn't find a matching entry in the SFS file");
+pub fn unpack_from_sfs_by_hash(
+    sfs_file: &SfsFile,
+    decompressed: &Vec<u8>,
+    hash: u64,
+) -> std::io::Result<Vec<u8>> {
+    let toc_item = sfs_file
+        .toc
+        .iter()
+        .find(|item| {
+            return item.hash == hash;
+        })
+        .expect("Couldn't find a matching entry in the SFS file");
 
     println!("Found entry at {:?}", toc_item);
 
     if toc_item.size == 0 {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "The file is empty"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "The file is empty",
+        ));
     } else {
         let start_offset = toc_item.offset as usize;
         let end_offset = (toc_item.offset + toc_item.size) as usize;
@@ -320,20 +314,70 @@ pub fn unpack_from_sfs_by_hash(sfs_file: &SfsFile, decompressed: &Vec<u8>, hash:
     }
 }
 
-pub fn unpack_from_sfs_by_path(sfs_file: &SfsFile, decompressed: &Vec<u8>, path: &Path) -> std::io::Result<Vec<u8>> {
+pub fn unpack_from_sfs_by_path(
+    sfs_file: &SfsFile,
+    decompressed: &Vec<u8>,
+    path: &Path,
+) -> std::io::Result<Vec<u8>> {
     if path.is_absolute() {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "The path must be relative to the IL-2 directory"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "The path must be relative to the IL-2 directory",
+        ));
     } else {
         let file_path_str = path.as_os_str().to_str().unwrap();
-        let file_path_hash = sfs_hash(0, file_path_str.as_bytes());
+        let file_path_hash = finger::bytes(0, file_path_str.as_bytes());
         return unpack_from_sfs_by_hash(sfs_file, decompressed, file_path_hash);
     }
 }
 
+const CLASS_MAGIC: [u8; 4] = [0xCA, 0xFE, 0xBA, 0xBE];
+
+pub fn unpack_from_sfs_by_class_name(
+    sfs_file: &SfsFile,
+    decompressed: &Vec<u8>,
+    class_name: String,
+) -> std::io::Result<Vec<u8>> {
+    let obfuscated_name = format!("sdw{}cwc2w9e", class_name);
+    let obfuscated_chars: Vec<i32> = obfuscated_name.chars().map(|c| return c as i32).collect();
+    let class_fingerprint = finger::int(&obfuscated_chars);
+    let class_hash = finger::string(0, format!("cod/{}", class_fingerprint));
+    let xor_table = finger::key_table(class_fingerprint);
+    let raw_class_data = unpack_from_sfs_by_hash(sfs_file, decompressed, class_hash)?;
+
+    if raw_class_data.starts_with(&CLASS_MAGIC) {
+        return Ok(raw_class_data);
+    } else {
+        let decrypted_class_data: Vec<u8> = raw_class_data
+            .iter()
+            .enumerate()
+            .map(|(i, b)| {
+                let table_idx = i % xor_table.len();
+                let xor_val = xor_table[table_idx];
+                let result = xor_val ^ b;
+                return result;
+            })
+            .collect();
+
+        let decrypted_class_data_with_header: Vec<u8> =
+            [0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, 0x00, 0x2F]
+                .iter()
+                .cloned()
+                .chain(decrypted_class_data)
+                .collect();
+
+        return Ok(decrypted_class_data_with_header);
+    }
+}
+
 pub fn decompress_sfs(sfs_file: &SfsFile) -> Result<Vec<u8>> {
-    let decompressed: Vec<u8> = sfs_file.chunk_boundaries.par_iter().flat_map(|boundary| {
-        return decompress_chunk(&sfs_file, *boundary);
-    }).collect();
+    let decompressed: Vec<u8> = sfs_file
+        .chunk_boundaries
+        .par_iter()
+        .flat_map(|boundary| {
+            return decompress_chunk(&sfs_file, *boundary);
+        })
+        .collect();
 
     return Ok(decompressed);
 }
