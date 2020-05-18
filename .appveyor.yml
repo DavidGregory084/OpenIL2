@@ -12,14 +12,14 @@ install:
   - ps: Set-Item -Path env:PATH -Value ($env:PATH + ";" + $env:USERPROFILE + "\.cargo\bin")
 
 build_script:
+  - cmd: cargo test
   - cmd: cargo build --release
-
-test_script:
-  - cmd: cargo test --verbose
 
 artifacts:
   - path: target/release/openil2.exe
     name: OpenIL2 Launcher
+  - path: target/debug/openil2.exe
+    name: OpenIL2 Launcher (Debug Mode)
 
 cache:
   - '%USERPROFILE%\.cargo'
