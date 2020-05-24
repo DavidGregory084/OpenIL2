@@ -13,9 +13,9 @@ use jni::*;
 use std::sync::RwLock;
 use winapi::shared::minwindef::{BOOL, DWORD, HINSTANCE, LPCVOID, LPVOID, MAX_PATH};
 use winapi::shared::ntdef::{FALSE, TRUE};
+use winapi::um::fileapi::INVALID_SET_FILE_POINTER;
 use winapi::um::processenv::GetCurrentDirectoryA;
 use winapi::um::winbase::{FILE_BEGIN, FILE_CURRENT, FILE_END};
-use winapi::um::fileapi::{INVALID_SET_FILE_POINTER};
 use winapi::um::winnt::{BOOLEAN, CHAR, DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, LONG, LPSTR};
 
 #[allow(unused_variables)]
@@ -93,7 +93,6 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_seek(
         return PHYSFS_seek(fd as *mut PHYSFS_File, pos as PHYSFS_uint64);
     }
 }
-
 
 #[allow(unused_variables)]
 #[no_mangle]
@@ -198,7 +197,7 @@ lazy_static! {
 struct FileHandle {
     size: usize,
     next_handle: *mut FileHandle,
-    physfs_file: *mut PHYSFS_File
+    physfs_file: *mut PHYSFS_File,
 }
 
 unsafe impl Send for FileHandle {}
@@ -206,13 +205,13 @@ unsafe impl Sync for FileHandle {}
 
 #[repr(C)]
 struct RTSInterface {
-    get_current_real_time: unsafe extern fn() -> i64,
-    get_current_game_time: unsafe extern fn() -> i64,
+    get_current_real_time: unsafe extern "C" fn() -> i64,
+    get_current_game_time: unsafe extern "C" fn() -> i64,
     open_file: unsafe fn(LPSTR, u32) -> i32,
     read_file: unsafe fn(*mut FileHandle, LPVOID, DWORD) -> BOOL,
     write_file: unsafe fn(*mut FileHandle, LPCVOID, DWORD) -> BOOL,
     seek_file: unsafe fn(*mut FileHandle, LONG, DWORD) -> DWORD,
-    close_file: unsafe fn(*mut FileHandle) -> i32
+    close_file: unsafe fn(*mut FileHandle) -> i32,
 }
 
 #[link(name = "rts", kind = "dylib")]
@@ -233,7 +232,7 @@ unsafe fn open_file(file_name: LPSTR, mask: u32) -> i32 {
     if mask & 1 != 0 || mask & 2 != 0 {
         // TRUNCATE_EXISTING
         if mask & 512 != 0 {
-           handle = PHYSFS_openWrite(file_name);
+            handle = PHYSFS_openWrite(file_name);
         // CREATE_ALWAYS
         } else if mask & 256 != 0 {
             handle = PHYSFS_openWrite(file_name);
@@ -248,19 +247,19 @@ unsafe fn open_file(file_name: LPSTR, mask: u32) -> i32 {
 
     if handle.is_null() {
         return -1;
-    } else  {
+    } else {
         if PHYSFS_seek(handle, 0) == 0 {
             return -1;
         } else {
             let next_handle = match &mut *file_list {
                 Some(next) => next,
-                None => std::ptr::null_mut()
+                None => std::ptr::null_mut(),
             };
 
             let mut new_file_list = FileHandle {
                 size: std::mem::size_of::<FileHandle>(),
                 next_handle: next_handle,
-                physfs_file: handle
+                physfs_file: handle,
             };
 
             *file_list = Some(new_file_list.clone());
@@ -292,7 +291,7 @@ unsafe fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: DWORD) -> D
             if PHYSFS_seek((*handle).physfs_file, desired_pos) > 0 {
                 return PHYSFS_tell((*handle).physfs_file) as DWORD;
             } else {
-                return INVALID_SET_FILE_POINTER
+                return INVALID_SET_FILE_POINTER;
             }
         } else {
             return INVALID_SET_FILE_POINTER;
@@ -304,7 +303,7 @@ unsafe fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: DWORD) -> D
             if PHYSFS_seek((*handle).physfs_file, desired_pos) > 0 {
                 return PHYSFS_tell((*handle).physfs_file) as DWORD;
             } else {
-                return INVALID_SET_FILE_POINTER
+                return INVALID_SET_FILE_POINTER;
             }
         } else {
             return INVALID_SET_FILE_POINTER;
@@ -324,7 +323,7 @@ unsafe fn close_file(handle: *mut FileHandle) -> BOOL {
     //         Some(list) => {
     //             let target_file = (*handle).physfs_file;
     //             let mut current_handle: FileHandle = *list;
-                
+
     //             while !current_handle.physfs_file.is_null() {
     //                 if current_handle.physfs_file == target_file { break; }
     //                 if current_handle.next_handle.is_null() { break; }
@@ -343,10 +342,7 @@ unsafe fn close_file(handle: *mut FileHandle) -> BOOL {
 
 #[allow(unused_variables)]
 #[no_mangle]
-pub extern "system" fn Java_com_maddox_rts_RTS_interf(
-    env: JNIEnv,
-    class: JClass,
-) -> jint {
+pub extern "system" fn Java_com_maddox_rts_RTS_interf(env: JNIEnv, class: JClass) -> jint {
     let mut rts_interface = RTSInterface {
         get_current_real_time: RTS_GetCurrentRealTime,
         get_current_game_time: RTS_GetCurrentGameTime,
@@ -354,7 +350,7 @@ pub extern "system" fn Java_com_maddox_rts_RTS_interf(
         read_file: read_file,
         write_file: write_file,
         seek_file: seek_file,
-        close_file: close_file
+        close_file: close_file,
     };
 
     return &mut rts_interface as *mut RTSInterface as jint;
