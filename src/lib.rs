@@ -249,20 +249,24 @@ unsafe fn open_file(file_name: LPSTR, mask: u32) -> i32 {
     if handle.is_null() {
         return -1;
     } else  {
-        let next_handle = match &mut *file_list {
-            Some(next) => next,
-            None => std::ptr::null_mut()
-        };
+        if PHYSFS_seek(handle, 0) == 0 {
+            return -1;
+        } else {
+            let next_handle = match &mut *file_list {
+                Some(next) => next,
+                None => std::ptr::null_mut()
+            };
 
-        let mut new_file_list = FileHandle {
-            size: std::mem::size_of::<FileHandle>(),
-            next_handle: next_handle,
-            physfs_file: handle
-        };
+            let mut new_file_list = FileHandle {
+                size: std::mem::size_of::<FileHandle>(),
+                next_handle: next_handle,
+                physfs_file: handle
+            };
 
-        *file_list = Some(new_file_list.clone());
+            *file_list = Some(new_file_list.clone());
 
-        return &mut new_file_list as *mut FileHandle as i32;
+            return &mut new_file_list as *mut FileHandle as i32;
+        }
     }
 }
 
