@@ -297,6 +297,7 @@ version = "0.1.0"
 dependencies = [
  "bindgen",
  "jni",
+ "lazy_static",
  "libc",
  "winapi",
 ]

@@ -4,16 +4,19 @@
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
+#[macro_use]
+extern crate lazy_static;
 extern crate libc;
 use jni::objects::*;
 use jni::sys::{jbyteArray, jint, jlong};
 use jni::*;
+use std::sync::RwLock;
 use winapi::shared::minwindef::{BOOL, DWORD, HINSTANCE, LPCVOID, LPVOID, MAX_PATH};
 use winapi::shared::ntdef::{FALSE, TRUE};
 use winapi::um::processenv::GetCurrentDirectoryA;
 use winapi::um::winbase::{FILE_BEGIN, FILE_CURRENT, FILE_END};
 use winapi::um::fileapi::{INVALID_SET_FILE_POINTER};
-use winapi::um::winnt::{BOOLEAN, CHAR, DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, HANDLE, LONG, LPCSTR};
+use winapi::um::winnt::{BOOLEAN, CHAR, DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, LONG, LPSTR};
 
 #[allow(unused_variables)]
 #[no_mangle]
@@ -186,15 +189,30 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_getLastErrorCode(
     }
 }
 
+lazy_static! {
+    static ref OPEN_FILES: RwLock<Option<FileHandle>> = RwLock::new(None);
+}
+
+#[repr(C)]
+#[derive(Clone)]
+struct FileHandle {
+    size: usize,
+    next_handle: *mut FileHandle,
+    physfs_file: *mut PHYSFS_File
+}
+
+unsafe impl Send for FileHandle {}
+unsafe impl Sync for FileHandle {}
+
 #[repr(C)]
 struct RTSInterface {
     get_current_real_time: unsafe extern fn() -> i64,
     get_current_game_time: unsafe extern fn() -> i64,
-    open_file: unsafe fn(LPCSTR) -> i32,
-    read_file: unsafe fn(HANDLE, LPVOID, DWORD) -> BOOL,
-    write_file: unsafe fn(HANDLE, LPCVOID, DWORD) -> BOOL,
-    seek_file: unsafe fn(HANDLE, LONG, DWORD) -> DWORD,
-    close_file: unsafe fn(HANDLE) -> i32
+    open_file: unsafe fn(LPSTR, u32) -> i32,
+    read_file: unsafe fn(*mut FileHandle, LPVOID, DWORD) -> BOOL,
+    write_file: unsafe fn(*mut FileHandle, LPCVOID, DWORD) -> BOOL,
+    seek_file: unsafe fn(*mut FileHandle, LONG, DWORD) -> DWORD,
+    close_file: unsafe fn(*mut FileHandle) -> i32
 }
 
 #[link(name = "rts", kind = "dylib")]
@@ -205,31 +223,70 @@ extern "C" {
     fn RTS_GetCurrentRealTime() -> i64;
 }
 
-unsafe fn open_file(file_name: LPCSTR) -> i32 {
-    return PHYSFS_openAppend(file_name) as i32;
+unsafe fn open_file(file_name: LPSTR, mask: u32) -> i32 {
+    // Take the write lock
+    let mut file_list = OPEN_FILES.write().unwrap();
+
+    // GENERIC_WRITE
+    let handle: *mut PHYSFS_File;
+
+    if mask & 1 != 0 || mask & 2 != 0 {
+        // TRUNCATE_EXISTING
+        if mask & 512 != 0 {
+           handle = PHYSFS_openWrite(file_name);
+        // CREATE_ALWAYS
+        } else if mask & 256 != 0 {
+            handle = PHYSFS_openWrite(file_name);
+        // OPEN_EXISTING
+        } else {
+            handle = PHYSFS_openAppend(file_name);
+        }
+    // GENERIC_READ
+    } else {
+        handle = PHYSFS_openRead(file_name);
+    };
+
+    if handle.is_null() {
+        return -1;
+    } else  {
+        let next_handle = match &mut *file_list {
+            Some(next) => next,
+            None => std::ptr::null_mut()
+        };
+
+        let mut new_file_list = FileHandle {
+            size: std::mem::size_of::<FileHandle>(),
+            next_handle: next_handle,
+            physfs_file: handle
+        };
+
+        *file_list = Some(new_file_list.clone());
+
+        return &mut new_file_list as *mut FileHandle as i32;
+    }
 }
 
-unsafe fn read_file(handle: HANDLE, buf: LPVOID, bytes_to_read: DWORD) -> BOOL {
-    return PHYSFS_readBytes(handle as *mut PHYSFS_File, buf, bytes_to_read.into()) as BOOL;
+unsafe fn read_file(handle: *mut FileHandle, buf: LPVOID, bytes_to_read: DWORD) -> BOOL {
+    return PHYSFS_readBytes((*handle).physfs_file, buf, bytes_to_read.into()) as BOOL;
 }
 
-unsafe fn write_file(handle: HANDLE, buf: LPCVOID, bytes_to_write: DWORD) -> BOOL {
-    return PHYSFS_writeBytes(handle as *mut PHYSFS_File, buf, bytes_to_write.into()) as BOOL;
+unsafe fn write_file(handle: *mut FileHandle, buf: LPCVOID, bytes_to_write: DWORD) -> BOOL {
+    return PHYSFS_writeBytes((*handle).physfs_file, buf, bytes_to_write.into()) as BOOL;
 }
 
-unsafe fn seek_file(handle: HANDLE, pos: LONG, move_method: DWORD) -> DWORD {
+unsafe fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: DWORD) -> DWORD {
     if move_method == FILE_BEGIN {
-        if PHYSFS_seek(handle as *mut PHYSFS_File, pos as u64) != 0 {
-            return PHYSFS_tell(handle as *mut PHYSFS_File) as DWORD;
+        if PHYSFS_seek((*handle).physfs_file, pos as u64) != 0 {
+            return PHYSFS_tell((*handle).physfs_file) as DWORD;
         } else {
             return INVALID_SET_FILE_POINTER;
         }
     } else if move_method == FILE_CURRENT {
-        let current_pos = PHYSFS_tell(handle as *mut PHYSFS_File);
+        let current_pos = PHYSFS_tell((*handle).physfs_file);
         if current_pos != 0 {
             let desired_pos = current_pos as u64 + pos as u64;
-            if PHYSFS_seek(handle as *mut PHYSFS_File, desired_pos) > 0 {
-                return PHYSFS_tell(handle as *mut PHYSFS_File) as DWORD;
+            if PHYSFS_seek((*handle).physfs_file, desired_pos) > 0 {
+                return PHYSFS_tell((*handle).physfs_file) as DWORD;
             } else {
                 return INVALID_SET_FILE_POINTER
             }
@@ -237,11 +294,11 @@ unsafe fn seek_file(handle: HANDLE, pos: LONG, move_method: DWORD) -> DWORD {
             return INVALID_SET_FILE_POINTER;
         }
     } else if move_method == FILE_END {
-        let file_length = PHYSFS_fileLength(handle as *mut PHYSFS_File);
+        let file_length = PHYSFS_fileLength((*handle).physfs_file);
         if file_length > 0 {
             let desired_pos = file_length as u64 + pos as u64;
-            if PHYSFS_seek(handle as *mut PHYSFS_File, desired_pos) > 0 {
-                return PHYSFS_tell(handle as *mut PHYSFS_File) as DWORD;
+            if PHYSFS_seek((*handle).physfs_file, desired_pos) > 0 {
+                return PHYSFS_tell((*handle).physfs_file) as DWORD;
             } else {
                 return INVALID_SET_FILE_POINTER
             }
@@ -253,8 +310,31 @@ unsafe fn seek_file(handle: HANDLE, pos: LONG, move_method: DWORD) -> DWORD {
     }
 }
 
-unsafe fn close_file(handle: HANDLE) -> BOOL {
-    return PHYSFS_close(handle as *mut PHYSFS_File) as BOOL;
+unsafe fn close_file(handle: *mut FileHandle) -> BOOL {
+    return PHYSFS_close((*handle).physfs_file);
+    // if PHYSFS_close((*handle).physfs_file) != 0 {
+    //     // Take the write lock
+    //     let mut file_list = OPEN_FILES.write().unwrap();
+
+    //     match &mut *file_list {
+    //         Some(list) => {
+    //             let target_file = (*handle).physfs_file;
+    //             let mut current_handle: FileHandle = *list;
+                
+    //             while !current_handle.physfs_file.is_null() {
+    //                 if current_handle.physfs_file == target_file { break; }
+    //                 if current_handle.next_handle.is_null() { break; }
+    //                 current_handle = *list.next_handle;
+    //             }
+    //         },
+    //         None => {
+    //             return 0;
+    //         }
+    //     };
+
+    // } else {
+    //     return 0;
+    // };
 }
 
 #[allow(unused_variables)]
@@ -298,7 +378,7 @@ extern "system" fn DllMain(dllHandle: HINSTANCE, reason: DWORD, reserved: LPVOID
                 return FALSE;
             }
             DLL_PROCESS_DETACH => {
-                if PHYSFS_deinit() > 0 {
+                if PHYSFS_deinit() != 0 {
                     return TRUE;
                 }
 

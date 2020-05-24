@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 libc = "0.2.69"
 winapi = "0.3.8"
 jni = "0.16"
+lazy_static = "1.4.0"
 
 [build-dependencies]
 bindgen = "0.53.2"
