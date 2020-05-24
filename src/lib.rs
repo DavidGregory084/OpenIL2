@@ -227,9 +227,9 @@ unsafe fn open_file(file_name: LPSTR, mask: u32) -> i32 {
     // Take the write lock
     let mut file_list = OPEN_FILES.write().unwrap();
 
-    // GENERIC_WRITE
     let handle: *mut PHYSFS_File;
 
+    // GENERIC_WRITE
     if mask & 1 != 0 || mask & 2 != 0 {
         // TRUNCATE_EXISTING
         if mask & 512 != 0 {
