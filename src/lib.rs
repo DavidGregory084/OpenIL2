@@ -370,6 +370,36 @@ pub fn unpack_from_sfs_by_class_name(
     }
 }
 
+pub fn unpack_from_sfs_by_fingerprint(
+    sfs_file: &SfsFile,
+    decompressed: &Vec<u8>,
+    fingerprint: i32,
+    xor_key: Option<i32>,
+) -> std::io::Result<Vec<u8>> {
+    let fingerprint_hash = finger::string(0, format!("cod/{}", fingerprint));
+    let xor_table = xor_key.map(|key| finger::key_table(key));
+    let raw_data = unpack_from_sfs_by_hash(sfs_file, decompressed, fingerprint_hash)?;
+
+    let decrypted_data: Vec<u8> = xor_table
+        .map(|tbl| {
+            return raw_data
+                .iter()
+                .enumerate()
+                .map(|(i, b)| {
+                    // The Java KryptoInputFilter increments the index before reading each byte,
+                    // so we use i + 1 as our index
+                    let table_idx = (i + 1) % tbl.len();
+                    let xor_val = tbl[table_idx];
+                    let result = xor_val ^ b;
+                    return result;
+                })
+                .collect();
+        })
+        .unwrap_or(raw_data);
+
+    return Ok(decrypted_data);
+}
+
 pub fn decompress_sfs(sfs_file: &SfsFile) -> Result<Vec<u8>> {
     let decompressed: Vec<u8> = sfs_file
         .chunk_boundaries
