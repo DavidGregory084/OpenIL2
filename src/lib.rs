@@ -8,8 +8,10 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 extern crate lazy_static;
 extern crate libc;
 use jni::objects::*;
+use jni::strings::{JNIStr, JavaStr};
 use jni::sys::{jbyteArray, jint, jlong};
 use jni::*;
+use std::ffi::CStr;
 use std::sync::RwLock;
 use winapi::shared::minwindef::{BOOL, DWORD, HINSTANCE, LPCVOID, LPVOID, MAX_PATH};
 use winapi::shared::ntdef::{FALSE, TRUE};
@@ -25,8 +27,17 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_fileLength(
     obj: JObject,
     fd: jlong,
 ) -> jlong {
+    let file = fd as *mut PHYSFS_File;
+
+    if cfg!(debug_assertions) {
+        printErr(
+            env,
+            format!("PhysFSInputStream#fileLength for file {:?}", file),
+        );
+    }
+
     unsafe {
-        return PHYSFS_fileLength(fd as *mut PHYSFS_File);
+        return PHYSFS_fileLength(file);
     }
 }
 
@@ -37,8 +48,14 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_tell(
     obj: JObject,
     fd: jlong,
 ) -> jlong {
+    let file = fd as *mut PHYSFS_File;
+
+    if cfg!(debug_assertions) {
+        printErr(env, format!("PhysFSInputStream#tell for file {:?}", file));
+    }
+
     unsafe {
-        return PHYSFS_tell(fd as *mut PHYSFS_File);
+        return PHYSFS_tell(file);
     }
 }
 
@@ -52,12 +69,24 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_readBytes(
     offset: jint,
     len: jint,
 ) -> jint {
+    let file = fd as *mut PHYSFS_File;
+
+    if cfg!(debug_assertions) {
+        printErr(
+            env,
+            format!(
+                "PhysFSInputStream#readBytes for file {:?} offset {} len {}",
+                file, offset, len
+            ),
+        );
+    }
+
     unsafe {
         let mut vec = vec![0 as i8; len as usize];
         let c_buf = &mut vec[..];
 
         let res = PHYSFS_readBytes(
-            fd as *mut PHYSFS_File,
+            file,
             c_buf.as_mut_ptr() as *mut libc::c_void,
             len as PHYSFS_uint64,
         ) as jint;
@@ -75,6 +104,18 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_openRead(
     obj: JObject,
     file_name: JString,
 ) -> jlong {
+    if cfg!(debug_assertions) {
+        let file_string: &JNIStr = &JavaStr::from_env(&env, file_name).unwrap();
+
+        printErr(
+            env,
+            format!(
+                "PhysFSInputStream#openRead for file {}",
+                file_string.to_str().unwrap()
+            ),
+        );
+    }
+
     unsafe {
         let physfs_file = PHYSFS_openRead((**env.get_string(file_name).unwrap()).as_ptr());
         return physfs_file as jlong;
@@ -89,8 +130,17 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_seek(
     fd: jlong,
     pos: jlong,
 ) -> jint {
+    let file = fd as *mut PHYSFS_File;
+
+    if cfg!(debug_assertions) {
+        printErr(
+            env,
+            format!("PhysFSInputStream#seek for file {:?} pos {}", file, pos),
+        );
+    }
+
     unsafe {
-        return PHYSFS_seek(fd as *mut PHYSFS_File, pos as PHYSFS_uint64);
+        return PHYSFS_seek(file, pos as PHYSFS_uint64);
     }
 }
 
@@ -101,8 +151,14 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_eof(
     obj: JObject,
     fd: jlong,
 ) -> jint {
+    let file = fd as *mut PHYSFS_File;
+
+    if cfg!(debug_assertions) {
+        printErr(env, format!("PhysFSInputStream#eof for file {:?}", file));
+    }
+
     unsafe {
-        return PHYSFS_eof(fd as *mut PHYSFS_File);
+        return PHYSFS_eof(file);
     }
 }
 
@@ -113,8 +169,14 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_close(
     obj: JObject,
     fd: jlong,
 ) -> jint {
+    let file = fd as *mut PHYSFS_File;
+
+    if cfg!(debug_assertions) {
+        printErr(env, format!("PhysFSInputStream#close for file {:?}", file));
+    }
+
     unsafe {
-        return PHYSFS_close(fd as *mut PHYSFS_File);
+        return PHYSFS_close(file);
     }
 }
 
@@ -125,6 +187,15 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_exists(
     class: JClass,
     file_name: JString,
 ) -> jint {
+    if cfg!(debug_assertions) {
+        let file_string: &JNIStr = &JavaStr::from_env(&env, file_name).unwrap();
+
+        printErr(
+            env,
+            format!("PhysFS.exists for file {}", file_string.to_str().unwrap()),
+        );
+    }
+
     unsafe {
         return PHYSFS_exists((**env.get_string(file_name).unwrap()).as_ptr());
     }
@@ -138,6 +209,19 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_mount(
     file_name: JString,
     append: jint,
 ) -> jint {
+    if cfg!(debug_assertions) {
+        let file_string: &JNIStr = &JavaStr::from_env(&env, file_name).unwrap();
+
+        printErr(
+            env,
+            format!(
+                "PhysFS.mount for file {} append {}",
+                file_string.to_str().unwrap(),
+                append
+            ),
+        );
+    }
+
     unsafe {
         return PHYSFS_mount(
             (**env.get_string(file_name).unwrap()).as_ptr(),
@@ -156,6 +240,20 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_mountAt(
     mount_point: JString,
     append: jint,
 ) -> jint {
+    if cfg!(debug_assertions) {
+        let file_str: &JNIStr = &JavaStr::from_env(&env, file_name).unwrap();
+        let mount_point_str: &JNIStr = &JavaStr::from_env(&env, mount_point).unwrap();
+        printErr(
+            env,
+            format!(
+                "PhysFS.mountAt for file {} mount_point {} append {}",
+                file_str.to_str().unwrap(),
+                mount_point_str.to_str().unwrap(),
+                append
+            ),
+        );
+    }
+
     unsafe {
         return PHYSFS_mount(
             (**env.get_string(file_name).unwrap()).as_ptr(),
@@ -172,6 +270,14 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_unmount(
     class: JClass,
     file_name: JString,
 ) -> jint {
+    if cfg!(debug_assertions) {
+        let file_string: &JNIStr = &JavaStr::from_env(&env, file_name).unwrap();
+        printErr(
+            env,
+            format!("PhysFS.unmount for file {}", file_string.to_str().unwrap(),),
+        );
+    }
+
     unsafe {
         return PHYSFS_unmount((**env.get_string(file_name).unwrap()).as_ptr());
     }
@@ -183,17 +289,33 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_getLastErrorCode(
     env: JNIEnv,
     class: JClass,
 ) -> jint {
+    if cfg!(debug_assertions) {
+        printErr(env, "PhysFS.getLastErrorCode".to_string());
+    }
+
     unsafe {
         return PHYSFS_getLastErrorCode();
     }
 }
 
+static RTS_INTERFACE: RTSInterface = RTSInterface {
+    get_current_real_time: RTS_GetCurrentRealTime,
+    get_current_game_time: RTS_GetCurrentGameTime,
+    open_file: open_file,
+    read_file: read_file,
+    write_file: write_file,
+    seek_file: seek_file,
+    close_file: close_file,
+};
+
+static mut OPEN_FILES: *mut FileHandle = std::ptr::null_mut();
+
 lazy_static! {
-    static ref OPEN_FILES: RwLock<Option<FileHandle>> = RwLock::new(None);
+    static ref JAVA_VM: RwLock<Option<JavaVM>> = RwLock::new(None);
 }
 
 #[repr(C)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct FileHandle {
     size: usize,
     next_handle: *mut FileHandle,
@@ -204,14 +326,26 @@ unsafe impl Send for FileHandle {}
 unsafe impl Sync for FileHandle {}
 
 #[repr(C)]
+#[derive(Clone, Debug)]
+struct FileHandleExtra {
+    size: usize,
+    next_handle: *mut FileHandle,
+    physfs_file: *mut PHYSFS_File,
+}
+
+unsafe impl Send for FileHandleExtra {}
+unsafe impl Sync for FileHandleExtra {}
+
+#[repr(C)]
+#[derive(Debug)]
 struct RTSInterface {
     get_current_real_time: unsafe extern "C" fn() -> i64,
     get_current_game_time: unsafe extern "C" fn() -> i64,
-    open_file: unsafe fn(LPSTR, u32) -> i32,
-    read_file: unsafe fn(*mut FileHandle, LPVOID, DWORD) -> BOOL,
-    write_file: unsafe fn(*mut FileHandle, LPCVOID, DWORD) -> BOOL,
-    seek_file: unsafe fn(*mut FileHandle, LONG, DWORD) -> DWORD,
-    close_file: unsafe fn(*mut FileHandle) -> i32,
+    open_file: unsafe extern "C" fn(LPSTR, u32) -> i32,
+    read_file: unsafe extern "C" fn(*mut FileHandle, LPVOID, DWORD) -> BOOL,
+    write_file: unsafe extern "C" fn(*mut FileHandle, LPCVOID, DWORD) -> BOOL,
+    seek_file: unsafe extern "C" fn(*mut FileHandle, LONG, DWORD) -> DWORD,
+    close_file: unsafe extern "C" fn(*mut FileHandle) -> i32,
 }
 
 #[link(name = "rts", kind = "dylib")]
@@ -222,9 +356,40 @@ extern "C" {
     fn RTS_GetCurrentRealTime() -> i64;
 }
 
-unsafe fn open_file(file_name: LPSTR, mask: u32) -> i32 {
-    // Take the write lock
-    let mut file_list = OPEN_FILES.write().unwrap();
+fn printErr(env: JNIEnv, message: String) {
+    let newline_string = format!("{}\n", message);
+    let jstring = env.new_string(newline_string).unwrap();
+    let _ = env.call_static_method(
+        "com/maddox/rts/RTS",
+        "cppErrPrint",
+        "(Ljava/lang/String;)V",
+        &[JValue::Object(*jstring)],
+    );
+}
+
+fn cppErrPrint(message: String) {
+    let jvm = JAVA_VM.read().unwrap();
+    let env = (*jvm).as_ref().unwrap().get_env().unwrap();
+    let newline_string = format!("{}\n", message);
+    let jstring = env.new_string(newline_string).unwrap();
+    let _ = env.call_static_method(
+        "com/maddox/rts/RTS",
+        "cppErrPrint",
+        "(Ljava/lang/String;)V",
+        &[JValue::Object(*jstring)],
+    );
+}
+
+unsafe extern "C" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
+    if cfg!(debug_assertions) {
+        let file_str = CStr::from_ptr(file_name).to_str().unwrap();
+
+        cppErrPrint(format!("open_file for file {} mask {}", file_str, mask));
+    }
+
+    if cfg!(debug_assertions) {
+        cppErrPrint(format!("initial file list {:?}", *OPEN_FILES));
+    }
 
     let handle: *mut PHYSFS_File;
 
@@ -245,39 +410,70 @@ unsafe fn open_file(file_name: LPSTR, mask: u32) -> i32 {
         handle = PHYSFS_openRead(file_name);
     };
 
+    if cfg!(debug_assertions) {
+        let file_str = CStr::from_ptr(file_name).to_str().unwrap();
+
+        cppErrPrint(format!(
+            "open_file for file {} returning handle {:p}",
+            file_str, handle,
+        ));
+    }
+
     if handle.is_null() {
         return -1;
     } else {
         if PHYSFS_seek(handle, 0) == 0 {
             return -1;
         } else {
-            let next_handle = match &mut *file_list {
-                Some(next) => next,
-                None => std::ptr::null_mut(),
-            };
-
-            let mut new_file_list = FileHandle {
+            let new_file_list = FileHandle {
                 size: std::mem::size_of::<FileHandle>(),
-                next_handle: next_handle,
+                next_handle: OPEN_FILES,
                 physfs_file: handle,
             };
 
-            *file_list = Some(new_file_list.clone());
+            *OPEN_FILES = new_file_list;
 
-            return &mut new_file_list as *mut FileHandle as i32;
+            if cfg!(debug_assertions) {
+                cppErrPrint(format!("updated file list {:?}", *OPEN_FILES));
+            }
+
+            return OPEN_FILES as jint;
         }
     }
 }
 
-unsafe fn read_file(handle: *mut FileHandle, buf: LPVOID, bytes_to_read: DWORD) -> BOOL {
+unsafe extern "C" fn read_file(handle: *mut FileHandle, buf: LPVOID, bytes_to_read: DWORD) -> BOOL {
+    if cfg!(debug_assertions) {
+        cppErrPrint(format!(
+            "read_file called with handle {:?} bytes {}",
+            handle, bytes_to_read
+        ));
+    }
     return PHYSFS_readBytes((*handle).physfs_file, buf, bytes_to_read.into()) as BOOL;
 }
 
-unsafe fn write_file(handle: *mut FileHandle, buf: LPCVOID, bytes_to_write: DWORD) -> BOOL {
+unsafe extern "C" fn write_file(
+    handle: *mut FileHandle,
+    buf: LPCVOID,
+    bytes_to_write: DWORD,
+) -> BOOL {
+    if cfg!(debug_assertions) {
+        cppErrPrint(format!(
+            "write_file called with handle {:?} bytes {}",
+            handle, bytes_to_write
+        ));
+    }
     return PHYSFS_writeBytes((*handle).physfs_file, buf, bytes_to_write.into()) as BOOL;
 }
 
-unsafe fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: DWORD) -> DWORD {
+unsafe extern "C" fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: DWORD) -> DWORD {
+    if cfg!(debug_assertions) {
+        cppErrPrint(format!(
+            "seek_file called with handle {:?} pos {} move_method {}",
+            handle, pos, move_method
+        ));
+    }
+
     if move_method == FILE_BEGIN {
         if PHYSFS_seek((*handle).physfs_file, pos as u64) != 0 {
             return PHYSFS_tell((*handle).physfs_file) as DWORD;
@@ -299,7 +495,7 @@ unsafe fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: DWORD) -> D
     } else if move_method == FILE_END {
         let file_length = PHYSFS_fileLength((*handle).physfs_file);
         if file_length > 0 {
-            let desired_pos = file_length as u64 + pos as u64;
+            let desired_pos = file_length as u64 - pos as u64;
             if PHYSFS_seek((*handle).physfs_file, desired_pos) > 0 {
                 return PHYSFS_tell((*handle).physfs_file) as DWORD;
             } else {
@@ -313,47 +509,62 @@ unsafe fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: DWORD) -> D
     }
 }
 
-unsafe fn close_file(handle: *mut FileHandle) -> BOOL {
-    return PHYSFS_close((*handle).physfs_file);
-    // if PHYSFS_close((*handle).physfs_file) != 0 {
-    //     // Take the write lock
-    //     let mut file_list = OPEN_FILES.write().unwrap();
+unsafe extern "C" fn close_file(handle: *mut FileHandle) -> BOOL {
+    if cfg!(debug_assertions) {
+        cppErrPrint(format!("close_file called with handle {:?}", *handle));
+        cppErrPrint(format!("initial file list {:?}", *OPEN_FILES));
+    }
 
-    //     match &mut *file_list {
-    //         Some(list) => {
-    //             let target_file = (*handle).physfs_file;
-    //             let mut current_handle: FileHandle = *list;
+    if !handle.is_null() {
+        if OPEN_FILES.is_null() {
+            let target_handle: *mut FileHandle = handle;
+            let mut last_handle: *mut FileHandle = std::ptr::null_mut();
+            let mut current_handle: *mut FileHandle = OPEN_FILES;
 
-    //             while !current_handle.physfs_file.is_null() {
-    //                 if current_handle.physfs_file == target_file { break; }
-    //                 if current_handle.next_handle.is_null() { break; }
-    //                 current_handle = *list.next_handle;
-    //             }
-    //         },
-    //         None => {
-    //             return 0;
-    //         }
-    //     };
+            while !current_handle.is_null() {
+                if (*current_handle).physfs_file == (*target_handle).physfs_file {
+                    if last_handle.is_null() {
+                        OPEN_FILES = (*current_handle).next_handle;
+                    } else {
+                        (*last_handle).next_handle = (*current_handle).next_handle;
+                    }
+                    break;
+                }
+                last_handle = current_handle;
+                current_handle = (*current_handle).next_handle;
+            }
 
-    // } else {
-    //     return 0;
-    // };
+            if cfg!(debug_assertions) {
+                cppErrPrint(format!("updated file list {:?}", *OPEN_FILES));
+            }
+
+            return PHYSFS_close((*handle).physfs_file);
+        } else {
+            return 0;
+        }
+    } else {
+        return 0;
+    }
 }
 
 #[allow(unused_variables)]
 #[no_mangle]
 pub extern "system" fn Java_com_maddox_rts_RTS_interf(env: JNIEnv, class: JClass) -> jint {
-    let mut rts_interface = RTSInterface {
-        get_current_real_time: RTS_GetCurrentRealTime,
-        get_current_game_time: RTS_GetCurrentGameTime,
-        open_file: open_file,
-        read_file: read_file,
-        write_file: write_file,
-        seek_file: seek_file,
-        close_file: close_file,
-    };
+    // Save the Java VM for later
+    let mut java_vm = JAVA_VM.write().unwrap();
+    *java_vm = Some(env.get_java_vm().unwrap());
 
-    return &mut rts_interface as *mut RTSInterface as jint;
+    if cfg!(debug_assertions) {
+        printErr(
+            env,
+            format!(
+                "Returning RTS interface {:?} {:p}",
+                &RTS_INTERFACE, &RTS_INTERFACE as *const RTSInterface
+            ),
+        );
+    }
+
+    return &RTS_INTERFACE as *const RTSInterface as jint;
 }
 
 #[allow(unused_variables)]
