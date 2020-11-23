@@ -495,7 +495,7 @@ unsafe extern "C" fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: 
     } else if move_method == FILE_END {
         let file_length = PHYSFS_fileLength((*handle).physfs_file);
         if file_length > 0 {
-            let desired_pos = file_length as u64 - pos as u64;
+            let desired_pos = file_length as u64 + pos as u64;
             if PHYSFS_seek((*handle).physfs_file, desired_pos) > 0 {
                 return PHYSFS_tell((*handle).physfs_file) as DWORD;
             } else {
