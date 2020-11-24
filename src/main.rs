@@ -76,8 +76,21 @@ fn call_main_method<'a>(env: &'a JNIEnv) -> Result<()> {
 fn main() -> std::io::Result<()> {
     let java_args = InitArgsBuilder::new()
         .version(JNIVersion::V8)
-        .option("-Djava.class.path=.")
-        .option("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005")
+        .option("-Djava.class.path=.;*")
+        .option("-Djava.locale.providers=COMPAT")
+        .option("-XX:+UseShenandoahGC")
+        .option("-XX:+AlwaysPreTouch")
+        .option("-XX:+DisableExplicitGC")
+        .option("-XX:-UseBiasedLocking")
+        .option("-Xms1400m")
+        .option("-Xmx1400m")
+        .option("-Xlog:gc+stats")
+        .option("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005")
+        .option("-Dcom.sun.management.jmxremote.host=127.0.0.1")
+        .option("-Dcom.sun.management.jmxremote.port=9010")
+        .option("-Dcom.sun.management.jmxremote.rmi.port=9010")
+        .option("-Dcom.sun.management.jmxremote.authenticate=false")
+        .option("-Dcom.sun.management.jmxremote.ssl=false")
         .build()
         .expect("Failed to create Java VM args");
 
