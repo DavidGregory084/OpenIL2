@@ -383,58 +383,113 @@ fn cppErrPrint(message: String) {
 unsafe extern "C" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
     if cfg!(debug_assertions) {
         let file_str = CStr::from_ptr(file_name).to_str().unwrap();
-
         cppErrPrint(format!("open_file for file {} mask {}", file_str, mask));
+        if OPEN_FILES.is_null() {
+            cppErrPrint("initial file list is empty".to_string());
+        } else {
+            cppErrPrint(format!("initial file list {:?}", *OPEN_FILES));
+        }
     }
 
-    if cfg!(debug_assertions) {
-        cppErrPrint(format!("initial file list {:?}", *OPEN_FILES));
-    }
-
-    let handle: *mut PHYSFS_File;
+    let physfs_file: *mut PHYSFS_File;
 
     // GENERIC_WRITE
     if mask & 1 != 0 || mask & 2 != 0 {
         // TRUNCATE_EXISTING
         if mask & 512 != 0 {
-            handle = PHYSFS_openWrite(file_name);
+            physfs_file = PHYSFS_openWrite(file_name);
         // CREATE_ALWAYS
         } else if mask & 256 != 0 {
-            handle = PHYSFS_openWrite(file_name);
+            physfs_file = PHYSFS_openWrite(file_name);
         // OPEN_EXISTING
         } else {
-            handle = PHYSFS_openAppend(file_name);
+            physfs_file = PHYSFS_openAppend(file_name);
         }
     // GENERIC_READ
     } else {
-        handle = PHYSFS_openRead(file_name);
+        physfs_file = PHYSFS_openRead(file_name);
     };
 
     if cfg!(debug_assertions) {
         let file_str = CStr::from_ptr(file_name).to_str().unwrap();
-
         cppErrPrint(format!(
-            "open_file for file {} returning handle {:p}",
-            file_str, handle,
+            "open_file for file {} returning PhysFS handle {:p}",
+            file_str, physfs_file,
         ));
     }
 
-    if handle.is_null() {
+    if physfs_file.is_null() {
+        if cfg!(debug_assertions) {
+            let file_str = CStr::from_ptr(file_name).to_str().unwrap();
+            let error = PHYSFS_getLastErrorCode();
+            let msg = CStr::from_ptr(PHYSFS_getErrorByCode(error))
+                .to_str()
+                .unwrap();
+            cppErrPrint(format!(
+                "failed to open file {} due to PhysFS error {}: {}",
+                file_str, error, msg
+            ));
+        }
         return -1;
     } else {
-        if PHYSFS_seek(handle, 0) == 0 {
+        if PHYSFS_seek(physfs_file, 0) == 0 {
+            if cfg!(debug_assertions) {
+                let file_str = CStr::from_ptr(file_name).to_str().unwrap();
+                let error = PHYSFS_getLastErrorCode();
+                let msg = CStr::from_ptr(PHYSFS_getErrorByCode(error))
+                    .to_str()
+                    .unwrap();
+                cppErrPrint(format!(
+                    "failed to seek to start of file {} due to PhysFS error {}: {}",
+                    file_str, error, msg
+                ));
+            }
             return -1;
         } else {
-            let new_file_list = FileHandle {
-                size: std::mem::size_of::<FileHandle>(),
-                next_handle: OPEN_FILES,
-                physfs_file: handle,
+            if cfg!(debug_assertions) {
+                let file_str = CStr::from_ptr(file_name).to_str().unwrap();
+                cppErrPrint(format!(
+                    "open_file for file {} updating file list",
+                    file_str
+                ));
+            }
+
+            let next_handle: *mut FileHandle = if OPEN_FILES.is_null() {
+                std::ptr::null_mut()
+            } else {
+                std::mem::replace(&mut OPEN_FILES, std::ptr::null_mut())
             };
 
-            *OPEN_FILES = new_file_list;
+            if cfg!(debug_assertions) {
+                let file_str = CStr::from_ptr(file_name).to_str().unwrap();
+                cppErrPrint(format!(
+                    "open_file for file {} updated next_handle to {:p}",
+                    file_str, next_handle
+                ));
+            }
+
+            let new_file_list = Box::new(FileHandle {
+                size: std::mem::size_of::<FileHandle>(),
+                next_handle: next_handle,
+                physfs_file: physfs_file,
+            });
 
             if cfg!(debug_assertions) {
-                cppErrPrint(format!("updated file list {:?}", *OPEN_FILES));
+                let file_str = CStr::from_ptr(file_name).to_str().unwrap();
+                cppErrPrint(format!(
+                    "open_file for file {} created new handle {:?}",
+                    file_str, new_file_list
+                ));
+            }
+
+            OPEN_FILES = Box::leak(new_file_list);
+
+            if cfg!(debug_assertions) {
+                if OPEN_FILES.is_null() {
+                    cppErrPrint("updated file list is empty".to_string());
+                } else {
+                    cppErrPrint(format!("updated file list {:?}", *OPEN_FILES));
+                }
             }
 
             return OPEN_FILES as jint;
@@ -512,11 +567,15 @@ unsafe extern "C" fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: 
 unsafe extern "C" fn close_file(handle: *mut FileHandle) -> BOOL {
     if cfg!(debug_assertions) {
         cppErrPrint(format!("close_file called with handle {:?}", *handle));
-        cppErrPrint(format!("initial file list {:?}", *OPEN_FILES));
+        if OPEN_FILES.is_null() {
+            cppErrPrint("initial file list is empty".to_string());
+        } else {
+            cppErrPrint(format!("initial file list {:?}", *OPEN_FILES));
+        }
     }
 
     if !handle.is_null() {
-        if OPEN_FILES.is_null() {
+        if !OPEN_FILES.is_null() {
             let target_handle: *mut FileHandle = handle;
             let mut last_handle: *mut FileHandle = std::ptr::null_mut();
             let mut current_handle: *mut FileHandle = OPEN_FILES;
@@ -528,6 +587,7 @@ unsafe extern "C" fn close_file(handle: *mut FileHandle) -> BOOL {
                     } else {
                         (*last_handle).next_handle = (*current_handle).next_handle;
                     }
+                    Box::from_raw(current_handle);
                     break;
                 }
                 last_handle = current_handle;
@@ -535,7 +595,11 @@ unsafe extern "C" fn close_file(handle: *mut FileHandle) -> BOOL {
             }
 
             if cfg!(debug_assertions) {
-                cppErrPrint(format!("updated file list {:?}", *OPEN_FILES));
+                if OPEN_FILES.is_null() {
+                    cppErrPrint("updated file list is empty".to_string());
+                } else {
+                    cppErrPrint(format!("updated file list {:?}", *OPEN_FILES));
+                }
             }
 
             return PHYSFS_close((*handle).physfs_file);
@@ -555,13 +619,7 @@ pub extern "system" fn Java_com_maddox_rts_RTS_interf(env: JNIEnv, class: JClass
     *java_vm = Some(env.get_java_vm().unwrap());
 
     if cfg!(debug_assertions) {
-        printErr(
-            env,
-            format!(
-                "Returning RTS interface {:?} {:p}",
-                &RTS_INTERFACE, &RTS_INTERFACE as *const RTSInterface
-            ),
-        );
+        printErr(env, format!("Returning RTS interface {:?}", &RTS_INTERFACE));
     }
 
     return &RTS_INTERFACE as *const RTSInterface as jint;
