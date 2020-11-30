@@ -12,13 +12,13 @@ install:
   - ps: Set-Item -Path env:PATH -Value ($env:PATH + ";" + $env:USERPROFILE + "\.cargo\bin")
 
 build_script:
-  - ps: cd launcher
-  - ps: cargo build
-  - ps: cargo build --release
+  - cmd: cd launcher
+  - cmd: cargo build
+  - cmd: cargo build --release
 
 test_script:
-  - ps: cd launcher
-  - ps: cargo test
+  - cmd: cd launcher
+  - cmd: cargo test
 
 artifacts:
   - path: launcher/target/release/openil2.exe
