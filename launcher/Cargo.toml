@@ -1,0 +1,11 @@
+[package]
+name = "openil2"
+version = "0.1.0"
+authors = ["David Gregory <davidgregory084@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+libc = "0.2.80"
+winapi = "0.3.9"
+libloading = "0.6.5"
+jni = { version = "0.18.0", features = ["invocation"] }
