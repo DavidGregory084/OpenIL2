@@ -20,10 +20,9 @@ build_script:
   - cmd: cargo build
   - cmd: cargo build --release
 
-  - cmd: cp /y %APPVEYOR_BUILD_FOLDER%\physfs_jni\target\debug\physfs_jni.dll %APPVEYOR_BUILD_FOLDER%\physfs_java
+  - cmd: copy /y %APPVEYOR_BUILD_FOLDER%\physfs_jni\target\debug\physfs_jni.dll %APPVEYOR_BUILD_FOLDER%\physfs_java
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_java
   - cmd: .\gradlew.bat jar
-  - cmd: .\gradlew.bat jacocoTestReport
 
 on_success:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_java
@@ -32,6 +31,12 @@ on_success:
 test_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\launcher
   - cmd: cargo test
+
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_jni
+  - cmd: cargo test
+
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_java
+  - cmd: .\gradlew.bat jacocoTestReport
 
 artifacts:
   - path: launcher\target\release\openil2.exe
