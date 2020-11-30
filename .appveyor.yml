@@ -20,20 +20,39 @@ build_script:
   - cmd: cargo build
   - cmd: cargo build --release
 
+  - cmd: cp /y %APPVEYOR_BUILD_FOLDER%\physfs_jni\target\debug\physfs_jni.dll %APPVEYOR_BUILD_FOLDER%\physfs_java
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_java
+  - cmd: .\gradlew.bat jar
+  - cmd: .\gradlew.bat jacocoTestReport
+
+on_success:
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_java
+  - cmd: .\gradlew.bat --stop
+
 test_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\launcher
   - cmd: cargo test
 
 artifacts:
-  - path: launcher/target/release/openil2.exe
+  - path: launcher\target\release\openil2.exe
     name: OpenIL2 Launcher
-  - path: launcher/target/debug/openil2.exe
+  - path: launcher\target\debug\openil2.exe
     name: OpenIL2 Launcher (Debug Mode)
 
-  - path: physfs_jni/target/release/physfs_jni.dll
+  - path: physfs_jni\target\release\physfs_jni.dll
     name: PhysFS JNI DLL
-  - path: physfs_jni/target/debug/physfs_jni.dll
+  - path: physfs_jni\target\debug\physfs_jni.dll
     name: PhysFS JNI DLL (Debug Mode)
+
+  - path: physfs_java\build\reports\tests\test
+    name: PhysFS Java JUnit Test Report
+  - path: physfs_java\build\reports\jacoco\test
+    name: PhysFS Java Jacoco Coverage Report
+  - path: physfs_java\build\libs\il2-physfs.jar
+    name: PhysFS Java JAR
 
 cache:
   - '%USERPROFILE%\.cargo'
+  - '%USERPROFILE%\.gradle\caches'
+  - '%USERPROFILE%\.gradle\wrapper'
+  - '%USERPROFILE%\.gradle\build-cache'
