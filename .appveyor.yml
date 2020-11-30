@@ -12,12 +12,16 @@ install:
   - ps: Set-Item -Path env:PATH -Value ($env:PATH + ";" + $env:USERPROFILE + "\.cargo\bin")
 
 build_script:
-  - cmd: cd launcher
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\launcher
+  - cmd: cargo build
+  - cmd: cargo build --release
+
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_jni
   - cmd: cargo build
   - cmd: cargo build --release
 
 test_script:
-  - cmd: cd launcher
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\launcher
   - cmd: cargo test
 
 artifacts:
@@ -25,6 +29,11 @@ artifacts:
     name: OpenIL2 Launcher
   - path: launcher/target/debug/openil2.exe
     name: OpenIL2 Launcher (Debug Mode)
+
+  - path: physfs_jni/target/release/physfs_jni.dll
+    name: PhysFS JNI DLL
+  - path: physfs_jni/target/debug/physfs_jni.dll
+    name: PhysFS JNI DLL (Debug Mode)
 
 cache:
   - '%USERPROFILE%\.cargo'
