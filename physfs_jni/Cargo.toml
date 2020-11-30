@@ -1,0 +1,19 @@
+[package]
+name = "physfs_jni"
+version = "0.1.0"
+authors = ["David Gregory <davidgregory084@gmail.com>"]
+edition = "2018"
+build = "build.rs"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+libc = "0.2.80"
+winapi = "0.3.9"
+jni = { version = "0.18.0", features = ["invocation"] }
+lazy_static = "1.4.0"
+libloading = "0.6.5"
+
+[build-dependencies]
+bindgen = "0.56.0"
