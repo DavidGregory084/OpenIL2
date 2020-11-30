@@ -1,11 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![allow(non_snake_case)]
 
-use jni::*;
 use jni::errors::jni_error_code_to_result;
 use jni::objects::*;
-use std::io::{Error, ErrorKind};
+use jni::*;
 use std::io::Result;
+use std::io::{Error, ErrorKind};
 extern crate libloading as lib;
 
 fn get_system_classloader<'a>(env: &'a JNIEnv) -> Result<JObject<'a>> {
@@ -22,15 +22,14 @@ fn get_system_classloader<'a>(env: &'a JNIEnv) -> Result<JObject<'a>> {
         )
         .expect("Unable to get system class loader");
 
-    return match loader_value {
+    match loader_value {
         JValue::Object(jobject) => Ok(jobject),
         _ => Err(Error::new(
             ErrorKind::NotFound,
             "Unable to get system class loader",
         )),
-    };
+    }
 }
-
 
 fn load_main_class<'a>(env: &'a JNIEnv, system_loader: &'a JObject) -> Result<JObject<'a>> {
     let main_class_str = "com.maddox.il2.game.GameWin3D";
@@ -41,18 +40,17 @@ fn load_main_class<'a>(env: &'a JNIEnv, system_loader: &'a JObject) -> Result<JO
 
     let class_value = env
         .call_method(
-            *system_loader, "loadClass", "(Ljava/lang/String;Z)Ljava/lang/Class;",
-            &[JValue::Object(*main_class_name), JValue::Bool(1)]
+            *system_loader,
+            "loadClass",
+            "(Ljava/lang/String;Z)Ljava/lang/Class;",
+            &[JValue::Object(*main_class_name), JValue::Bool(1)],
         )
         .expect("Unable to load main class");
 
-    return match class_value {
+    match class_value {
         JValue::Object(jobject) => Ok(jobject),
-        _ => Err(Error::new(
-            ErrorKind::NotFound,
-            "Unable to load main class"
-        ))
-    };
+        _ => Err(Error::new(ErrorKind::NotFound, "Unable to load main class")),
+    }
 }
 
 fn call_main_method<'a>(env: &'a JNIEnv) -> Result<()> {
@@ -66,15 +64,16 @@ fn call_main_method<'a>(env: &'a JNIEnv) -> Result<()> {
 
     let _ = env.call_static_method(
         "com/maddox/il2/game/GameWin3D",
-        "main", "([Ljava/lang/String;)V",
-        &[JValue::Object(main_args.into())]
+        "main",
+        "([Ljava/lang/String;)V",
+        &[JValue::Object(main_args.into())],
     );
 
-    return Ok(())
+    Ok(())
 }
 
 fn main() -> std::io::Result<()> {
-    let java_args = InitArgsBuilder::new()
+    let mut java_arg_bldr = InitArgsBuilder::new()
         .version(JNIVersion::V8)
         .option("-Djava.class.path=.;*")
         .option("-Djava.locale.providers=COMPAT")
@@ -83,14 +82,21 @@ fn main() -> std::io::Result<()> {
         .option("-XX:+DisableExplicitGC")
         .option("-XX:-UseBiasedLocking")
         .option("-Xms1400m")
-        .option("-Xmx1400m")
-        .option("-Xlog:gc+stats")
-        .option("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005")
-        .option("-Dcom.sun.management.jmxremote.host=127.0.0.1")
-        .option("-Dcom.sun.management.jmxremote.port=9010")
-        .option("-Dcom.sun.management.jmxremote.rmi.port=9010")
-        .option("-Dcom.sun.management.jmxremote.authenticate=false")
-        .option("-Dcom.sun.management.jmxremote.ssl=false")
+        .option("-Xmx1400m");
+
+    if cfg!(debug_assertions) {
+        java_arg_bldr = java_arg_bldr
+            .option("-Xlog:gc+stats")
+            .option("-Xlog:class+load=info")
+            .option("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005")
+            .option("-Dcom.sun.management.jmxremote.host=127.0.0.1")
+            .option("-Dcom.sun.management.jmxremote.port=9010")
+            .option("-Dcom.sun.management.jmxremote.rmi.port=9010")
+            .option("-Dcom.sun.management.jmxremote.authenticate=false")
+            .option("-Dcom.sun.management.jmxremote.ssl=false");
+    }
+
+    let java_args = java_arg_bldr
         .build()
         .expect("Failed to create Java VM args");
 
@@ -100,7 +106,7 @@ fn main() -> std::io::Result<()> {
     // we need it to call the JNI_CreateJavaVM function dynamically
     struct VMInitArgs {
         pub inner: sys::JavaVMInitArgs,
-        pub opts: Vec<sys::JavaVMOption>
+        pub opts: Vec<sys::JavaVMOption>,
     }
 
     let mut raw_java_args: VMInitArgs = unsafe { std::mem::transmute(java_args) };
@@ -111,13 +117,14 @@ fn main() -> std::io::Result<()> {
 
     println!("Found jvm.dll");
 
-    let JNI_CreateJavaVM: lib::Symbol<unsafe extern fn(
-        pvm: *mut *mut sys::JavaVM,
-        penv: *mut *mut sys::JNIEnv,
-        args: *mut sys::JavaVMInitArgs,
-    ) -> sys::jint> = unsafe {
-        lib
-            .get(b"JNI_CreateJavaVM\0")
+    let JNI_CreateJavaVM: lib::Symbol<
+        unsafe extern "C" fn(
+            pvm: *mut *mut sys::JavaVM,
+            penv: *mut *mut sys::JNIEnv,
+            args: *mut sys::JavaVMInitArgs,
+        ) -> sys::jint,
+    > = unsafe {
+        lib.get(b"JNI_CreateJavaVM\0")
             .expect("Unable to find JNI_CreateJavaVM function")
     };
 
@@ -127,8 +134,9 @@ fn main() -> std::io::Result<()> {
         jni_error_code_to_result(JNI_CreateJavaVM(
             &mut raw_java_vm,
             &mut raw_env,
-            &mut raw_java_args.inner
-        )).expect("Error creating Java VM")
+            &mut raw_java_args.inner,
+        ))
+        .expect("Error creating Java VM")
     };
 
     let java_vm = unsafe { JavaVM::from_raw(raw_java_vm).unwrap() };
@@ -155,5 +163,5 @@ fn main() -> std::io::Result<()> {
         env.exception_describe().unwrap()
     };
 
-    return Ok(())
+    Ok(())
 }
