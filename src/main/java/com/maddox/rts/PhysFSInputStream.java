@@ -5,7 +5,7 @@ import java.io.InputStream;
 
 public class PhysFSInputStream extends InputStream {
     private long fd;
-    private final String fileName;
+    private String fileName;
 
     public PhysFSInputStream(String file) {
         this.fd = openRead(file);
@@ -46,7 +46,7 @@ public class PhysFSInputStream extends InputStream {
             int result = read(buf);
 
             if (result > 0) {
-                return buf[0];
+                return buf[0] & 0xFF;
             } else {
                 throw new PhysFSException("while reading from file " + this.fileName);
             }
