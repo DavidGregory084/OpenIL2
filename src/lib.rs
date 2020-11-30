@@ -12,6 +12,7 @@ use jni::strings::{JNIStr, JavaStr};
 use jni::sys::{jbyteArray, jint, jlong};
 use jni::*;
 use std::ffi::CStr;
+use std::fmt;
 use std::sync::RwLock;
 use winapi::shared::minwindef::{BOOL, DWORD, HINSTANCE, LPCVOID, LPVOID, MAX_PATH};
 use winapi::shared::ntdef::{FALSE, TRUE};
@@ -326,26 +327,28 @@ unsafe impl Send for FileHandle {}
 unsafe impl Sync for FileHandle {}
 
 #[repr(C)]
-#[derive(Clone, Debug)]
-struct FileHandleExtra {
-    size: usize,
-    next_handle: *mut FileHandle,
-    physfs_file: *mut PHYSFS_File,
-}
-
-unsafe impl Send for FileHandleExtra {}
-unsafe impl Sync for FileHandleExtra {}
-
-#[repr(C)]
-#[derive(Debug)]
 struct RTSInterface {
     get_current_real_time: unsafe extern "C" fn() -> i64,
     get_current_game_time: unsafe extern "C" fn() -> i64,
-    open_file: unsafe extern "C" fn(LPSTR, u32) -> i32,
-    read_file: unsafe extern "C" fn(*mut FileHandle, LPVOID, DWORD) -> BOOL,
-    write_file: unsafe extern "C" fn(*mut FileHandle, LPCVOID, DWORD) -> BOOL,
-    seek_file: unsafe extern "C" fn(*mut FileHandle, LONG, DWORD) -> DWORD,
-    close_file: unsafe extern "C" fn(*mut FileHandle) -> i32,
+    open_file: unsafe extern "system" fn(LPSTR, u32) -> i32,
+    read_file: unsafe extern "system" fn(*mut FileHandle, LPVOID, DWORD) -> BOOL,
+    write_file: unsafe extern "system" fn(*mut FileHandle, LPCVOID, DWORD) -> BOOL,
+    seek_file: unsafe extern "system" fn(*mut FileHandle, LONG, DWORD) -> DWORD,
+    close_file: unsafe extern "system" fn(*mut FileHandle) -> i32,
+}
+
+impl std::fmt::Debug for RTSInterface {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RTSInterface")
+         .field("get_current_real_time", &(&self.get_current_real_time as *const _))
+         .field("get_current_game_time", &(&self.get_current_game_time as *const _))
+         .field("open_file", &(&self.open_file as *const _))
+         .field("read_file", &(&self.read_file as *const _))
+         .field("write_file", &(&self.write_file as *const _))
+         .field("seek_file", &(&self.seek_file as *const _))
+         .field("close_file", &(&self.close_file as *const _))
+         .finish()
+    }
 }
 
 #[link(name = "rts", kind = "dylib")]
@@ -380,7 +383,7 @@ fn cppErrPrint(message: String) {
     );
 }
 
-unsafe extern "C" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
+unsafe extern "system" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
     if cfg!(debug_assertions) {
         let file_str = CStr::from_ptr(file_name).to_str().unwrap();
         cppErrPrint(format!("open_file for file {} mask {}", file_str, mask));
@@ -497,7 +500,7 @@ unsafe extern "C" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
     }
 }
 
-unsafe extern "C" fn read_file(handle: *mut FileHandle, buf: LPVOID, bytes_to_read: DWORD) -> BOOL {
+unsafe extern "system" fn read_file(handle: *mut FileHandle, buf: LPVOID, bytes_to_read: DWORD) -> BOOL {
     if cfg!(debug_assertions) {
         cppErrPrint(format!(
             "read_file called with handle {:?} bytes {}",
@@ -507,7 +510,7 @@ unsafe extern "C" fn read_file(handle: *mut FileHandle, buf: LPVOID, bytes_to_re
     return PHYSFS_readBytes((*handle).physfs_file, buf, bytes_to_read.into()) as BOOL;
 }
 
-unsafe extern "C" fn write_file(
+unsafe extern "system" fn write_file(
     handle: *mut FileHandle,
     buf: LPCVOID,
     bytes_to_write: DWORD,
@@ -521,7 +524,7 @@ unsafe extern "C" fn write_file(
     return PHYSFS_writeBytes((*handle).physfs_file, buf, bytes_to_write.into()) as BOOL;
 }
 
-unsafe extern "C" fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: DWORD) -> DWORD {
+unsafe extern "system" fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: DWORD) -> DWORD {
     if cfg!(debug_assertions) {
         cppErrPrint(format!(
             "seek_file called with handle {:?} pos {} move_method {}",
@@ -537,7 +540,9 @@ unsafe extern "C" fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: 
         }
     } else if move_method == FILE_CURRENT {
         let current_pos = PHYSFS_tell((*handle).physfs_file);
-        if current_pos != 0 {
+        if current_pos == -1 {
+            return INVALID_SET_FILE_POINTER;
+        } else if pos != 0 {
             let desired_pos = current_pos as u64 + pos as u64;
             if PHYSFS_seek((*handle).physfs_file, desired_pos) > 0 {
                 return PHYSFS_tell((*handle).physfs_file) as DWORD;
@@ -545,7 +550,7 @@ unsafe extern "C" fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: 
                 return INVALID_SET_FILE_POINTER;
             }
         } else {
-            return INVALID_SET_FILE_POINTER;
+            return current_pos as DWORD;
         }
     } else if move_method == FILE_END {
         let file_length = PHYSFS_fileLength((*handle).physfs_file);
@@ -564,7 +569,7 @@ unsafe extern "C" fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: 
     }
 }
 
-unsafe extern "C" fn close_file(handle: *mut FileHandle) -> BOOL {
+unsafe extern "system" fn close_file(handle: *mut FileHandle) -> BOOL {
     if cfg!(debug_assertions) {
         cppErrPrint(format!("close_file called with handle {:?}", *handle));
         if OPEN_FILES.is_null() {

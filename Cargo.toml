@@ -16,4 +16,4 @@ lazy_static = "1.4.0"
 libloading = "0.6.5"
 
 [build-dependencies]
-bindgen = "0.55.1"
+bindgen = "0.56.0"
