@@ -1,4 +1,3 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![allow(non_snake_case)]
 
 use jni::errors::jni_error_code_to_result;
@@ -8,7 +7,7 @@ use std::io::Result;
 use std::io::{Error, ErrorKind};
 extern crate libloading as lib;
 
-fn get_system_classloader<'a>(env: &'a JNIEnv) -> Result<JObject<'a>> {
+fn get_system_classloader(env: JNIEnv<'_>) -> Result<JObject<'_>> {
     let loader_class = env
         .find_class("java/lang/ClassLoader")
         .expect("Unable to find Java ClassLoader class");
@@ -31,7 +30,7 @@ fn get_system_classloader<'a>(env: &'a JNIEnv) -> Result<JObject<'a>> {
     }
 }
 
-fn load_main_class<'a>(env: &'a JNIEnv, system_loader: &'a JObject) -> Result<JObject<'a>> {
+fn load_main_class<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JObject<'a>> {
     let main_class_str = "com.maddox.il2.game.GameWin3D";
 
     let main_class_name = env
@@ -53,7 +52,7 @@ fn load_main_class<'a>(env: &'a JNIEnv, system_loader: &'a JObject) -> Result<JO
     }
 }
 
-fn call_main_method<'a>(env: &'a JNIEnv) -> Result<()> {
+fn call_main_method(env: JNIEnv<'_>) -> Result<()> {
     let string_class = env
         .find_class("java/lang/String")
         .expect("Unable to find Java String class");
@@ -87,8 +86,7 @@ fn main() -> std::io::Result<()> {
     if cfg!(debug_assertions) {
         java_arg_bldr = java_arg_bldr
             .option("-Xlog:gc+stats")
-            .option("-Xlog:class+load=info")
-            .option("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005")
+            .option("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005")
             .option("-Dcom.sun.management.jmxremote.host=127.0.0.1")
             .option("-Dcom.sun.management.jmxremote.port=9010")
             .option("-Dcom.sun.management.jmxremote.rmi.port=9010")
@@ -147,13 +145,13 @@ fn main() -> std::io::Result<()> {
 
     println!("Attached current thread to Java VM");
 
-    let env = &*attach_guard;
+    let env = *attach_guard;
 
-    let system_loader = get_system_classloader(&env)?;
+    let system_loader = get_system_classloader(env)?;
 
     println!("Fetched system classloader");
 
-    load_main_class(env, &system_loader)?;
+    load_main_class(env, system_loader)?;
 
     println!("Loaded main class");
 
