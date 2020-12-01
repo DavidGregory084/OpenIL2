@@ -11,6 +11,7 @@ install:
   - ps: Invoke-WebRequest -Uri https://win.rustup.rs/i686 -OutFile rustup-init.exe
   - cmd: .\rustup-init.exe -y --profile minimal --default-toolchain stable --default-host i686-pc-windows-msvc
   - ps: Set-Item -Path env:PATH -Value ($env:PATH + ";" + $env:USERPROFILE + "\.cargo\bin")
+  - ps: Set-Item -Path env:GRADLE_USER_HOME -Value $env:APPVEYOR_BUILD_FOLDER
 
 build_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\launcher
@@ -37,7 +38,7 @@ test_script:
   - cmd: .\gradlew.bat :physfs_java:jacocoTestReport
 
 on_finish:
-  - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_java
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: .\gradlew.bat --stop
 
 artifacts:
@@ -60,5 +61,5 @@ artifacts:
 
 cache:
   - '%USERPROFILE%\.cargo'
-  - '%USERPROFILE%\.gradle\caches'
-  - '%USERPROFILE%\.gradle\wrapper'
+  - '.gradle\caches'
+  - '.gradle\wrapper'
