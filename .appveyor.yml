@@ -38,6 +38,11 @@ build_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: .\gradlew.bat :physfs_java:jar
 
+  # Class loading agent
+  #
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%
+  - cmd: .\gradlew.bat :classload_agent:jar
+
   # Inno Setup installer
   #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
@@ -89,6 +94,9 @@ artifacts:
     name: PhysFS Java JUnit Test Report
   - path: physfs_java\build\reports\jacoco\test
     name: PhysFS Java Jacoco Coverage Report
+
+  - path: classload_agent\build\libs\classload_agent.jar
+    name: Class Loading Agent JAR
 
 cache:
   - '%USERPROFILE%\.cargo'
