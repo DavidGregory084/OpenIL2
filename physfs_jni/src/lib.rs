@@ -8,7 +8,6 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 extern crate lazy_static;
 extern crate libc;
 use jni::objects::*;
-use jni::strings::{JNIStr, JavaStr};
 use jni::sys::{jbyteArray, jint, jlong};
 use jni::*;
 use std::ffi::CStr;
@@ -37,9 +36,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_fileLength(
         );
     }
 
-    unsafe {
-        return PHYSFS_fileLength(file);
-    }
+    unsafe { PHYSFS_fileLength(file) }
 }
 
 #[allow(unused_variables)]
@@ -55,9 +52,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_tell(
         printErr(env, format!("PhysFSInputStream#tell for file {:?}", file));
     }
 
-    unsafe {
-        return PHYSFS_tell(file);
-    }
+    unsafe { PHYSFS_tell(file) }
 }
 
 #[allow(unused_variables)]
@@ -94,7 +89,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_readBytes(
 
         env.set_byte_array_region(java_buf, offset, c_buf).unwrap();
 
-        return res;
+        res
     }
 }
 
@@ -105,22 +100,19 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_openRead(
     obj: JObject,
     file_name: JString,
 ) -> jlong {
-    if cfg!(debug_assertions) {
-        let file_string: &JNIStr = &JavaStr::from_env(&env, file_name).unwrap();
+    let file_str = env.get_string(file_name).unwrap();
 
+    if cfg!(debug_assertions) {
         printErr(
             env,
             format!(
                 "PhysFSInputStream#openRead for file {}",
-                file_string.to_str().unwrap()
+                file_str.to_str().unwrap()
             ),
         );
     }
 
-    unsafe {
-        let physfs_file = PHYSFS_openRead((**env.get_string(file_name).unwrap()).as_ptr());
-        return physfs_file as jlong;
-    }
+    unsafe { PHYSFS_openRead(file_str.as_ptr()) as jlong }
 }
 
 #[allow(unused_variables)]
@@ -140,9 +132,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_seek(
         );
     }
 
-    unsafe {
-        return PHYSFS_seek(file, pos as PHYSFS_uint64);
-    }
+    unsafe { PHYSFS_seek(file, pos as PHYSFS_uint64) }
 }
 
 #[allow(unused_variables)]
@@ -158,9 +148,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_eof(
         printErr(env, format!("PhysFSInputStream#eof for file {:?}", file));
     }
 
-    unsafe {
-        return PHYSFS_eof(file);
-    }
+    unsafe { PHYSFS_eof(file) }
 }
 
 #[allow(unused_variables)]
@@ -176,9 +164,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_close(
         printErr(env, format!("PhysFSInputStream#close for file {:?}", file));
     }
 
-    unsafe {
-        return PHYSFS_close(file);
-    }
+    unsafe { PHYSFS_close(file) }
 }
 
 #[allow(unused_variables)]
@@ -188,18 +174,16 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_exists(
     class: JClass,
     file_name: JString,
 ) -> jint {
-    if cfg!(debug_assertions) {
-        let file_string: &JNIStr = &JavaStr::from_env(&env, file_name).unwrap();
+    let file_str = env.get_string(file_name).unwrap();
 
+    if cfg!(debug_assertions) {
         printErr(
             env,
-            format!("PhysFS.exists for file {}", file_string.to_str().unwrap()),
+            format!("PhysFS.exists for file {}", file_str.to_str().unwrap()),
         );
     }
 
-    unsafe {
-        return PHYSFS_exists((**env.get_string(file_name).unwrap()).as_ptr());
-    }
+    unsafe { PHYSFS_exists(file_str.as_ptr()) }
 }
 
 #[allow(unused_variables)]
@@ -210,26 +194,20 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_mount(
     file_name: JString,
     append: jint,
 ) -> jint {
-    if cfg!(debug_assertions) {
-        let file_string: &JNIStr = &JavaStr::from_env(&env, file_name).unwrap();
+    let file_str = env.get_string(file_name).unwrap();
 
+    if cfg!(debug_assertions) {
         printErr(
             env,
             format!(
                 "PhysFS.mount for file {} append {}",
-                file_string.to_str().unwrap(),
+                file_str.to_str().unwrap(),
                 append
             ),
         );
     }
 
-    unsafe {
-        return PHYSFS_mount(
-            (**env.get_string(file_name).unwrap()).as_ptr(),
-            std::ptr::null(),
-            append,
-        );
-    }
+    unsafe { PHYSFS_mount(file_str.as_ptr(), std::ptr::null(), append) }
 }
 
 #[allow(unused_variables)]
@@ -241,9 +219,10 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_mountAt(
     mount_point: JString,
     append: jint,
 ) -> jint {
+    let file_str = env.get_string(file_name).unwrap();
+    let mount_point_str = env.get_string(mount_point).unwrap();
+
     if cfg!(debug_assertions) {
-        let file_str: &JNIStr = &JavaStr::from_env(&env, file_name).unwrap();
-        let mount_point_str: &JNIStr = &JavaStr::from_env(&env, mount_point).unwrap();
         printErr(
             env,
             format!(
@@ -255,13 +234,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_mountAt(
         );
     }
 
-    unsafe {
-        return PHYSFS_mount(
-            (**env.get_string(file_name).unwrap()).as_ptr(),
-            (**env.get_string(mount_point).unwrap()).as_ptr(),
-            append,
-        );
-    }
+    unsafe { PHYSFS_mount(file_str.as_ptr(), mount_point_str.as_ptr(), append) }
 }
 
 #[allow(unused_variables)]
@@ -271,17 +244,16 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_unmount(
     class: JClass,
     file_name: JString,
 ) -> jint {
+    let file_str = env.get_string(file_name).unwrap();
+
     if cfg!(debug_assertions) {
-        let file_string: &JNIStr = &JavaStr::from_env(&env, file_name).unwrap();
         printErr(
             env,
-            format!("PhysFS.unmount for file {}", file_string.to_str().unwrap(),),
+            format!("PhysFS.unmount for file {}", file_str.to_str().unwrap()),
         );
     }
 
-    unsafe {
-        return PHYSFS_unmount((**env.get_string(file_name).unwrap()).as_ptr());
-    }
+    unsafe { PHYSFS_unmount(file_str.as_ptr()) }
 }
 
 #[allow(unused_variables)]
@@ -294,9 +266,7 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_getLastErrorCode(
         printErr(env, "PhysFS.getLastErrorCode".to_string());
     }
 
-    unsafe {
-        return PHYSFS_getLastErrorCode();
-    }
+    unsafe { PHYSFS_getLastErrorCode() }
 }
 
 static RTS_INTERFACE: RTSInterface = RTSInterface {
@@ -340,14 +310,20 @@ struct RTSInterface {
 impl std::fmt::Debug for RTSInterface {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("RTSInterface")
-         .field("get_current_real_time", &(&self.get_current_real_time as *const _))
-         .field("get_current_game_time", &(&self.get_current_game_time as *const _))
-         .field("open_file", &(&self.open_file as *const _))
-         .field("read_file", &(&self.read_file as *const _))
-         .field("write_file", &(&self.write_file as *const _))
-         .field("seek_file", &(&self.seek_file as *const _))
-         .field("close_file", &(&self.close_file as *const _))
-         .finish()
+            .field(
+                "get_current_real_time",
+                &(&self.get_current_real_time as *const _),
+            )
+            .field(
+                "get_current_game_time",
+                &(&self.get_current_game_time as *const _),
+            )
+            .field("open_file", &(&self.open_file as *const _))
+            .field("read_file", &(&self.read_file as *const _))
+            .field("write_file", &(&self.write_file as *const _))
+            .field("seek_file", &(&self.seek_file as *const _))
+            .field("close_file", &(&self.close_file as *const _))
+            .finish()
     }
 }
 
@@ -500,7 +476,11 @@ unsafe extern "system" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
     }
 }
 
-unsafe extern "system" fn read_file(handle: *mut FileHandle, buf: LPVOID, bytes_to_read: DWORD) -> BOOL {
+unsafe extern "system" fn read_file(
+    handle: *mut FileHandle,
+    buf: LPVOID,
+    bytes_to_read: DWORD,
+) -> BOOL {
     if cfg!(debug_assertions) {
         cppErrPrint(format!(
             "read_file called with handle {:?} bytes {}",
@@ -524,7 +504,11 @@ unsafe extern "system" fn write_file(
     return PHYSFS_writeBytes((*handle).physfs_file, buf, bytes_to_write.into()) as BOOL;
 }
 
-unsafe extern "system" fn seek_file(handle: *mut FileHandle, pos: LONG, move_method: DWORD) -> DWORD {
+unsafe extern "system" fn seek_file(
+    handle: *mut FileHandle,
+    pos: LONG,
+    move_method: DWORD,
+) -> DWORD {
     if cfg!(debug_assertions) {
         cppErrPrint(format!(
             "seek_file called with handle {:?} pos {} move_method {}",
@@ -627,7 +611,7 @@ pub extern "system" fn Java_com_maddox_rts_RTS_interf(env: JNIEnv, class: JClass
         printErr(env, format!("Returning RTS interface {:?}", &RTS_INTERFACE));
     }
 
-    return &RTS_INTERFACE as *const RTSInterface as jint;
+    &RTS_INTERFACE as *const RTSInterface as jint
 }
 
 #[allow(unused_variables)]
