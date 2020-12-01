@@ -29,6 +29,7 @@ Source: "..\physfs_jni\target\release\deps\physfs_jni.pdb"; DestDir: "{app}"; Fl
 Source: "..\physfs_java\physfs.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_java\rts.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_java\build\libs\physfs_java.jar"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\classload_agent\build\libs\classload_agent.jar"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
