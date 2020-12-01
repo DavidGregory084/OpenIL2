@@ -25,6 +25,9 @@ build_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: .\gradlew.bat :physfs_java:jar
 
+  - cmd: iscc /O%APPVEYOR_BUILD_FOLDER%\output %APPVEYOR_BUILD_FOLDER%\installer\openil2-debug.iss
+  - cmd: iscc /O%APPVEYOR_BUILD_FOLDER%\output %APPVEYOR_BUILD_FOLDER%\installer\openil2.iss
+
 test_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\launcher
   - cmd: cargo test
@@ -41,6 +44,12 @@ on_finish:
   - cmd: .\gradlew.bat --stop
 
 artifacts:
+  - path: installer\output\openil2-installer-debug.exe
+    name: OpenIL2 Installer (Debug Mode)
+
+  - path: installer\output\openil2-installer.exe
+    name: OpenIL2 Installer
+
   - path: launcher\target\release\openil2.exe
     name: OpenIL2 Launcher
   - path: launcher\target\debug\openil2.exe
