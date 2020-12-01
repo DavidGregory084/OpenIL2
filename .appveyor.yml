@@ -36,6 +36,7 @@ test_script:
   - cmd: cargo test
 
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_java
+  - cmd: .\gradlew.bat test
   - cmd: .\gradlew.bat jacocoTestReport
 
 artifacts:
