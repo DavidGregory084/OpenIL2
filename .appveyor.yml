@@ -1,46 +1,68 @@
 image: Visual Studio 2019
 
 environment:
-  RUST_BACKTRACE: "1"
+  # Statically link the Windows 10 Universal CRT, so that it is not a runtime dependency
   RUSTFLAGS: "-C target-feature=+crt-static"
+  RUST_BACKTRACE: "1"
 
 install:
+  # Install 32-bit versions of LLVM and JDK11
   - cinst llvm --x86
   - cinst adoptopenjdk11 --x86 --params="/ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome /INSTALLDIR=%ProgramFiles%\AdoptOpenJDK"
+  # Refresh environment variables to ensure JAVA_HOME has been updated
   - cmd: refreshenv
+  # Fetch and install Rust tooling
   - ps: Invoke-WebRequest -Uri https://win.rustup.rs/i686 -OutFile rustup-init.exe
   - cmd: .\rustup-init.exe -y --profile minimal --default-toolchain stable --default-host i686-pc-windows-msvc
+  # Add cargo build tool and Inno Setup to PATH
   - ps: Set-Item -Path env:PATH -Value ($env:PATH + ";" + $env:USERPROFILE + "\.cargo\bin")
   - ps: Set-Item -Path env:PATH -Value ($env:PATH + ";" + "C:\Program Files (x86)\Inno Setup 6")
 
 build_script:
+  # Launcher executable
+  #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\launcher
   - cmd: cargo build
   - cmd: cargo build --release
 
+  # PhysFS JNI DLL
+  #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_jni
   - cmd: cargo build
   - cmd: cargo build --release
 
+  # Java PhysFS library
+  #
+  # Copy the PhysFS JNI DLL to the Java build directory so that we ensure the latest version is tested
   - cmd: copy /y %APPVEYOR_BUILD_FOLDER%\physfs_jni\target\release\physfs_jni.dll %APPVEYOR_BUILD_FOLDER%\physfs_java
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: .\gradlew.bat :physfs_java:jar
 
+  # Inno Setup installer
+  #
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: iscc /O%APPVEYOR_BUILD_FOLDER%\installer\output %APPVEYOR_BUILD_FOLDER%\installer\openil2-debug.iss
   - cmd: iscc /O%APPVEYOR_BUILD_FOLDER%\installer\output %APPVEYOR_BUILD_FOLDER%\installer\openil2.iss
 
 test_script:
+  # Launcher executable
+  #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\launcher
   - cmd: cargo test
 
+  # PhysFS JNI DLL
+  #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_jni
   - cmd: cargo test
 
+  # Java PhysFS library
+  #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: .\gradlew.bat :physfs_java:test
   - cmd: .\gradlew.bat :physfs_java:jacocoTestReport
 
-on_finish:
+after_test:
+  # Stop the Gradle daemon so it doesn't lock files in the build cache
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: .\gradlew.bat --stop
 
