@@ -11,7 +11,6 @@ install:
   - ps: Invoke-WebRequest -Uri https://win.rustup.rs/i686 -OutFile rustup-init.exe
   - cmd: .\rustup-init.exe -y --profile minimal --default-toolchain stable --default-host i686-pc-windows-msvc
   - ps: Set-Item -Path env:PATH -Value ($env:PATH + ";" + $env:USERPROFILE + "\.cargo\bin")
-  - ps: Set-Item -Path env:GRADLE_USER_HOME -Value $env:APPVEYOR_BUILD_FOLDER
 
 build_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\launcher
@@ -61,5 +60,5 @@ artifacts:
 
 cache:
   - '%USERPROFILE%\.cargo'
-  - '.gradle\caches'
-  - '.gradle\wrapper'
+  - '%USERPROFILE%\.gradle\caches'
+  - '%USERPROFILE%\.gradle\wrapper'
