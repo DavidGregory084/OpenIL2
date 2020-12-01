@@ -23,11 +23,7 @@ build_script:
 
   - cmd: copy /y %APPVEYOR_BUILD_FOLDER%\physfs_jni\target\release\physfs_jni.dll %APPVEYOR_BUILD_FOLDER%\physfs_java
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
-  - cmd: .\gradlew.bat :physfs_java:jar --scan
-
-on_success:
-  - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_java
-  - cmd: .\gradlew.bat --stop
+  - cmd: .\gradlew.bat :physfs_java:jar
 
 test_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\launcher
@@ -39,6 +35,10 @@ test_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: .\gradlew.bat :physfs_java:test
   - cmd: .\gradlew.bat :physfs_java:jacocoTestReport
+
+on_finish:
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_java
+  - cmd: .\gradlew.bat --stop
 
 artifacts:
   - path: launcher\target\release\openil2.exe
