@@ -1,5 +1,7 @@
 build/
 target/
+jre/
+jre_debug/
 .idea/
 .gradle/
 .vscode/

@@ -21,6 +21,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
+[InstallDelete]
+Type: filesandordirs; Name: "{app}\bin"
+Type: filesandordirs; Name: "{app}\lib"
+
 [Files]
 Source: "..\launcher\target\debug\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\launcher\target\debug\openil2.pdb"; DestDir: "{app}"; Flags: ignoreversion
@@ -30,6 +34,7 @@ Source: "..\physfs_java\physfs.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_java\rts.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_java\build\libs\physfs_java.jar"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\classload_agent\build\libs\classload_agent.jar"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\jre_debug\*.*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

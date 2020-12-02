@@ -11,11 +11,20 @@ version = "0.1.0-SNAPSHOT"
 dependencies {
     implementation("org.ow2.asm:asm-commons:9.0")
     implementation("org.ow2.asm:asm-util:9.0")
+    implementation("io.sigpipe:jbsdiff:1.0")
+    testImplementation("org.junit.jupiter", "junit-jupiter", "5.6.2")
 }
 
 tasks.compileJava {
-    sourceCompatibility = "1.8"
-    targetCompatibility = "1.8"
+    sourceCompatibility = "11"
+    targetCompatibility = "11"
+}
+
+tasks.test {
+    useJUnitPlatform()
+    testLogging {
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
 
 tasks.jar {
