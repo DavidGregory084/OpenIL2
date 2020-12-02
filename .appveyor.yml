@@ -46,22 +46,12 @@ build_script:
   # Custom JRE with JMX debugging support
   #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
-  - ps: >-
-      jlink
-        --no-header-files
-        --no-man-pages
-        --add-modules java.base,java.instrument,java.desktop,jdk.jdwp.agent
-        --output jre_debug
+  - ps: jlink --no-header-files --no-man-pages --add-modules java.base,java.instrument,java.desktop,jdk.jdwp.agent --output jre_debug
 
   # Custom JRE
   #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
-  - ps: >-
-      jlink
-        --no-header-files
-        --no-man-pages
-        --add-modules java.base,java.instrument,java.desktop
-        --output jre
+  - ps: jlink --no-header-files --no-man-pages --add-modules java.base,java.instrument,java.desktop --output jre
 
   # Inno Setup installer
   #
