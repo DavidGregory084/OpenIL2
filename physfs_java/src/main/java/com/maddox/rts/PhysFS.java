@@ -35,7 +35,7 @@ public class PhysFS {
     public static native int getLastErrorCode();
 
     public static void mountArchive(String file) {
-        mountArchive(file, true);
+        mountArchive(file, false);
     }
 
     public static void mountArchive(String file, boolean appendToSearchPath) {
@@ -48,7 +48,7 @@ public class PhysFS {
     private static native int mount(String file, int appendToSearchPath);
 
     public static void mountArchiveAt(String file, String mountPoint) {
-        mountArchiveAt(file, mountPoint, true);
+        mountArchiveAt(file, mountPoint, false);
     }
 
     public static void mountArchiveAt(String file, String mountPoint, boolean appendToSearchPath) {
