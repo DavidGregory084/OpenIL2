@@ -21,18 +21,23 @@ import java.util.Set;
 
 public class SFSTransformer implements ClassFileTransformer {
     // Patches
-    static Type RTS_TYPE = Type.getType("Lcom/maddox/rts/RTS;");
-    static Type MAIN_TYPE = Type.getType("Lcom/maddox/il2/game/Main;");
-    static Type AIRCRAFT_TYPE = Type.getType("Lcom/maddox/il2/objects/air/Aircraft;");
+    static String AIRCRAFT_HASH = "BZhTkHgIo6ueEQMxEhogLrsZECbQuJJEGSdV/mbqDz8=";
+    static String FLIGHT_MODEL_MAIN_HASH = "/qOb3QVBSaCHDPAbpd5Rz2WAgnflPcvJnLl+cu7yyVc=";
+    static String IN_OUT_STREAMS_HASH = "EDZ8V7U1Wk5Ay8+3jQt0hzH0+t4x2Sm3th2eFT3u+1o=";
+    static String INPUT_STREAM_OF_INPUT_STREAM_HASH = "F8ZE8WEJzhYQmqyxTQD9hkATOcczUcBY+rz/bOkM/2U=";
+    static String MAIN_HASH = "SrYyadsKERh5f/4brV40GlSnwR+mbDYjdtd6AKK3gG8=";
+    static String RTS_HASH = "jdlTl7o2LFAdbw9j+i6hoyjAKYaEJwpRfIKCpHQc/0Y=";
 
     MessageDigest messageDigest = MessageDigest.getInstance("SHA3-256");
     Base64.Encoder base64Encoder = Base64.getEncoder();
 
     static Map<String, String> patches = Map.ofEntries(
-            Map.entry("BZhTkHgIo6ueEQMxEhogLrsZECbQuJJEGSdV/mbqDz8=", "/Aircraft.patch"),
-            Map.entry("/qOb3QVBSaCHDPAbpd5Rz2WAgnflPcvJnLl+cu7yyVc=", "/FlightModelMain.patch"),
-            Map.entry("SrYyadsKERh5f/4brV40GlSnwR+mbDYjdtd6AKK3gG8=", "/Main.patch"),
-            Map.entry("jdlTl7o2LFAdbw9j+i6hoyjAKYaEJwpRfIKCpHQc/0Y=", "/RTS.patch")
+            Map.entry(AIRCRAFT_HASH, "/Aircraft.patch"),
+            Map.entry(FLIGHT_MODEL_MAIN_HASH, "/FlightModelMain.patch"),
+            Map.entry(IN_OUT_STREAMS_HASH, "/InOutStreams.patch"),
+            Map.entry(INPUT_STREAM_OF_INPUT_STREAM_HASH, "/InputStreamOfInputStream.patch"),
+            Map.entry(MAIN_HASH, "/Main.patch"),
+            Map.entry(RTS_HASH, "/RTS.patch")
     );
 
     // Remappings
@@ -109,9 +114,9 @@ public class SFSTransformer implements ClassFileTransformer {
 
                 // Transform references to SFS code
                 var reader = new ClassReader(patchedBuffer);
-                var writer = new ClassWriter(0);
+                var writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
                 var visitor = new CheckClassAdapter(new ClassRemapper(writer, remapper));
-                reader.accept(visitor, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+                reader.accept(visitor, ClassReader.SKIP_FRAMES);
 
                 return writer.toByteArray();
             }
