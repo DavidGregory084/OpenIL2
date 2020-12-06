@@ -74,7 +74,7 @@ fn call_main_method(env: JNIEnv<'_>) -> Result<()> {
 fn main() -> std::io::Result<()> {
     let mut java_arg_bldr = InitArgsBuilder::new()
         .version(JNIVersion::V8)
-        .option("-Djava.class.path=.;*")
+        .option("-Djava.class.path=.;physfs_java.jar")
         .option("-javaagent:classload_agent.jar")
         .option("-Djava.locale.providers=COMPAT")
         .option("-XX:+UseShenandoahGC")

@@ -92,7 +92,7 @@ public class SFSTransformer implements ClassFileTransformer {
 
     public byte[] transform(ClassLoader classLoader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classFileBuffer) throws IllegalClassFormatException {
         try {
-            if (!className.startsWith("com.maddox") || skipClasses.contains(className)) {
+            if (!className.startsWith("com/maddox/") || skipClasses.contains(className)) {
                 return classFileBuffer;
             } else {
                 var hashBytes = messageDigest.digest(classFileBuffer);
