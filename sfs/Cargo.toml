@@ -1,0 +1,16 @@
+[package]
+name = "rts"
+version = "0.1.0"
+authors = ["David Gregory <davidgregory084@gmail.com>"]
+edition = "2018"
+
+[lib]
+name = "rts"
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+memmap = "0.7"
+nom = "5"
+rayon = "1.2"
+flate2 = "1"
+jni = "0.13"
