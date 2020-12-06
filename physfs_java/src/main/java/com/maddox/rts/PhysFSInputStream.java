@@ -165,7 +165,7 @@ public class PhysFSInputStream extends InputStream {
         }
     }
 
-    private static void loadNative() {
+    public static void loadNative() {
         System.loadLibrary("physfs_jni");
     }
 

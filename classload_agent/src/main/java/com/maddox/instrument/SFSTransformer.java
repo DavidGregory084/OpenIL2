@@ -116,7 +116,7 @@ public class SFSTransformer implements ClassFileTransformer {
                 var reader = new ClassReader(patchedBuffer);
                 var writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
                 var visitor = new CheckClassAdapter(new ClassRemapper(writer, remapper));
-                reader.accept(visitor, ClassReader.SKIP_FRAMES);
+                reader.accept(visitor, 0);
 
                 return writer.toByteArray();
             }
