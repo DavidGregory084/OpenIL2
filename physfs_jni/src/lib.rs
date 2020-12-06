@@ -10,7 +10,7 @@ extern crate libc;
 use jni::objects::*;
 use jni::sys::{jbyteArray, jint, jlong};
 use jni::*;
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use std::fmt;
 use std::sync::RwLock;
 use winapi::shared::minwindef::{BOOL, DWORD, HINSTANCE, LPCVOID, LPVOID, MAX_PATH};
@@ -100,19 +100,21 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_openRead(
     obj: JObject,
     file_name: JString,
 ) -> jlong {
-    let file_str = env.get_string(file_name).unwrap();
+    let file_java_str = env.get_string(file_name).unwrap();
+    let file_str = file_java_str.to_str().unwrap().replace("\\", "/");
+    let file_c_str = CString::new(file_str.clone()).unwrap();
 
     if cfg!(debug_assertions) {
         printErr(
             env,
             format!(
                 "PhysFSInputStream#openRead for file {}",
-                file_str.to_str().unwrap()
+                file_str
             ),
         );
     }
 
-    unsafe { PHYSFS_openRead(file_str.as_ptr()) as jlong }
+    unsafe { PHYSFS_openRead(file_c_str.as_ptr()) as jlong }
 }
 
 #[allow(unused_variables)]
@@ -359,9 +361,12 @@ fn cppErrPrint(message: String) {
     );
 }
 
-unsafe extern "system" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
+unsafe extern "system" fn open_file(orig_file_name: LPSTR, mask: u32) -> i32 {
+    let orig_file_str = CStr::from_ptr(orig_file_name).to_str().unwrap();
+    let file_str = orig_file_str.replace("\\", "/");
+    let file_c_str = CString::new(file_str.clone()).unwrap();
+
     if cfg!(debug_assertions) {
-        let file_str = CStr::from_ptr(file_name).to_str().unwrap();
         cppErrPrint(format!("open_file for file {} mask {}", file_str, mask));
         if OPEN_FILES.is_null() {
             cppErrPrint("initial file list is empty".to_string());
@@ -376,21 +381,20 @@ unsafe extern "system" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
     if mask & 1 != 0 || mask & 2 != 0 {
         // TRUNCATE_EXISTING
         if mask & 512 != 0 {
-            physfs_file = PHYSFS_openWrite(file_name);
+            physfs_file = PHYSFS_openWrite(file_c_str.as_ptr());
         // CREATE_ALWAYS
         } else if mask & 256 != 0 {
-            physfs_file = PHYSFS_openWrite(file_name);
+            physfs_file = PHYSFS_openWrite(file_c_str.as_ptr());
         // OPEN_EXISTING
         } else {
-            physfs_file = PHYSFS_openAppend(file_name);
+            physfs_file = PHYSFS_openAppend(file_c_str.as_ptr());
         }
     // GENERIC_READ
     } else {
-        physfs_file = PHYSFS_openRead(file_name);
+        physfs_file = PHYSFS_openRead(file_c_str.as_ptr());
     };
 
     if cfg!(debug_assertions) {
-        let file_str = CStr::from_ptr(file_name).to_str().unwrap();
         cppErrPrint(format!(
             "open_file for file {} returning PhysFS handle {:p}",
             file_str, physfs_file,
@@ -399,7 +403,6 @@ unsafe extern "system" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
 
     if physfs_file.is_null() {
         if cfg!(debug_assertions) {
-            let file_str = CStr::from_ptr(file_name).to_str().unwrap();
             let error = PHYSFS_getLastErrorCode();
             let msg = CStr::from_ptr(PHYSFS_getErrorByCode(error))
                 .to_str()
@@ -413,7 +416,6 @@ unsafe extern "system" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
     } else {
         if PHYSFS_seek(physfs_file, 0) == 0 {
             if cfg!(debug_assertions) {
-                let file_str = CStr::from_ptr(file_name).to_str().unwrap();
                 let error = PHYSFS_getLastErrorCode();
                 let msg = CStr::from_ptr(PHYSFS_getErrorByCode(error))
                     .to_str()
@@ -426,7 +428,6 @@ unsafe extern "system" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
             return -1;
         } else {
             if cfg!(debug_assertions) {
-                let file_str = CStr::from_ptr(file_name).to_str().unwrap();
                 cppErrPrint(format!(
                     "open_file for file {} updating file list",
                     file_str
@@ -440,7 +441,6 @@ unsafe extern "system" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
             };
 
             if cfg!(debug_assertions) {
-                let file_str = CStr::from_ptr(file_name).to_str().unwrap();
                 cppErrPrint(format!(
                     "open_file for file {} updated next_handle to {:p}",
                     file_str, next_handle
@@ -454,7 +454,6 @@ unsafe extern "system" fn open_file(file_name: LPSTR, mask: u32) -> i32 {
             });
 
             if cfg!(debug_assertions) {
-                let file_str = CStr::from_ptr(file_name).to_str().unwrap();
                 cppErrPrint(format!(
                     "open_file for file {} created new handle {:?}",
                     file_str, new_file_list
