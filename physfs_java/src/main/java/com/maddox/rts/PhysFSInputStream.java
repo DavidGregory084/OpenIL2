@@ -1,16 +1,28 @@
 package com.maddox.rts;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.sql.SQLException;
+import java.util.Locale;
 
 public class PhysFSInputStream extends InputStream {
     private long fd;
-    private String fileName;
+    private final String fileName;
+
+
+    public PhysFSInputStream(String file, long fingerprint, int hash, int keyLenOffset, int tableIndexOffset) {
+        this.fd = openRead(file);
+        this.fileName = file;
+        if (this.fd == 0) {
+            throw new PhysFSException("while opening file " + file);
+        }
+    }
 
     public PhysFSInputStream(String file) {
         this.fd = openRead(file);
         this.fileName = file;
-        if (this.fd <= 0) {
+        if (this.fd == 0) {
             throw new PhysFSException("while opening file " + file);
         }
     }
@@ -22,7 +34,7 @@ public class PhysFSInputStream extends InputStream {
     private native int openRead(String file);
 
     public void close() {
-        if (this.fd != -1) {
+        if (this.fd != 0) {
             this.close(this.fd);
             this.fd = -1;
         }
@@ -31,7 +43,7 @@ public class PhysFSInputStream extends InputStream {
     private native int close(long fileDescriptor);
 
     public boolean endOfFile() {
-        if (this.fd != -1) {
+        if (this.fd != 0) {
             return eof(this.fd) != 0;
         } else {
             return true;
@@ -41,7 +53,7 @@ public class PhysFSInputStream extends InputStream {
     private native int eof(long fileDescriptor);
 
     public int read() {
-        if (this.fd != -1 && !endOfFile()) {
+        if (this.fd != 0 && !endOfFile()) {
             byte[] buf = new byte[1];
             int result = read(buf);
 
@@ -64,7 +76,7 @@ public class PhysFSInputStream extends InputStream {
             throw new IndexOutOfBoundsException();
         } else if (len == 0) {
             return 0;
-        } else if (this.fd != -1) {
+        } else if (this.fd != 0) {
             int res =  readBytes(this.fd, buf, offset, len);
 
             if (res > 0) {
@@ -82,7 +94,7 @@ public class PhysFSInputStream extends InputStream {
     private native int readBytes(long fileDescriptor, byte[] buf, int offset, int len);
 
     public long fileLength() {
-        if (this.fd != -1) {
+        if (this.fd != 0) {
             return fileLength(this.fd);
         } else {
             return -1;
@@ -92,7 +104,7 @@ public class PhysFSInputStream extends InputStream {
     private native long fileLength(long fileDescriptor);
 
     public void seek(long pos) {
-        if (this.fd != -1) {
+        if (this.fd != 0) {
             int res = seek(this.fd, pos);
 
             if (res != 0) {
@@ -108,7 +120,7 @@ public class PhysFSInputStream extends InputStream {
     private native int seek(long fileDescriptor, long pos);
 
     public long tell() {
-        if (this.fd != -1) {
+        if (this.fd != 0) {
             long pos = tell(this.fd);
 
             if (pos >= 0) {
@@ -124,7 +136,7 @@ public class PhysFSInputStream extends InputStream {
     private native long tell(long fileDescriptor);
 
     public int available() {
-        if (this.fd != -1) {
+        if (this.fd != 0) {
             long remaining = this.fileLength() - this.tell();
             long truncated = Math.min(remaining, Integer.MAX_VALUE);
             return (int) truncated;
@@ -134,7 +146,7 @@ public class PhysFSInputStream extends InputStream {
     }
 
     public long skip(long n) {
-        if (this.fd != -1) {
+        if (this.fd != 0) {
             long currentPos = tell();
             long fileLength = fileLength();
             long desiredPos = currentPos + n;
@@ -148,7 +160,7 @@ public class PhysFSInputStream extends InputStream {
     }
 
     protected void finalize() {
-        if (this.fd != -1) {
+        if (this.fd != 0) {
             this.close();
         }
     }
