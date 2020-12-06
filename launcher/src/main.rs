@@ -75,13 +75,14 @@ fn main() -> std::io::Result<()> {
     let mut java_arg_bldr = InitArgsBuilder::new()
         .version(JNIVersion::V8)
         .option("-Djava.class.path=.;*")
+        .option("-javaagent:classload_agent.jar")
         .option("-Djava.locale.providers=COMPAT")
         .option("-XX:+UseShenandoahGC")
         .option("-XX:+AlwaysPreTouch")
         .option("-XX:+DisableExplicitGC")
         .option("-XX:-UseBiasedLocking")
-        .option("-Xms1400m")
-        .option("-Xmx1400m");
+        .option("-Xms1000m")
+        .option("-Xmx1000m");
 
     if cfg!(debug_assertions) {
         java_arg_bldr = java_arg_bldr
