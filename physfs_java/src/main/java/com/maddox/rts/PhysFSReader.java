@@ -20,4 +20,20 @@ public class PhysFSReader extends InputStreamReader {
     public PhysFSReader(File file, String charset) throws UnsupportedEncodingException {
         super(new PhysFSInputStream(file), charset);
     }
+
+    public PhysFSReader(String var1, int[] var2)  {
+        super(new PhysFSInputStream(var1));
+    }
+
+    public PhysFSReader(File var1, int[] var2) {
+        super(new PhysFSInputStream(var1));
+    }
+
+    public PhysFSReader(String var1, String var2, int[] var3) throws UnsupportedEncodingException {
+        super(new PhysFSInputStream(var1), var2);
+    }
+
+    public PhysFSReader(File var1, String var2, int[] var3) throws UnsupportedEncodingException {
+        super(new PhysFSInputStream(var1), var2);
+    }
 }

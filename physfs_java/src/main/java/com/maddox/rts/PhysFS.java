@@ -39,10 +39,17 @@ public class PhysFS {
     }
 
     public static void mountArchive(String file, boolean appendToSearchPath) {
-        int res = mount(file, appendToSearchPath ? 1 : 0);
-        if (res == 0) {
-            throw new PhysFSException("while mounting file " + file);
-        }
+//        int res = mount(file, appendToSearchPath ? 1 : 0);
+//        if (res == 0) {
+//            throw new PhysFSException("while mounting file " + file);
+//        }
+    }
+
+    public static void mountArchive(String file, int appendToSearchPath) {
+//        int res = mount(file, appendToSearchPath);
+//        if (res == 0) {
+//            throw new PhysFSException("while mounting file " + file);
+//        }
     }
 
     private static native int mount(String file, int appendToSearchPath);
@@ -52,10 +59,17 @@ public class PhysFS {
     }
 
     public static void mountArchiveAt(String file, String mountPoint, boolean appendToSearchPath) {
-        int res = mountAt(file, mountPoint, appendToSearchPath ? 1 : 0);
-        if (res == 0) {
-            throw new PhysFSException("while mounting file " + file + " at mount point " + mountPoint);
-        }
+//        int res = mountAt(file, mountPoint, appendToSearchPath ? 1 : 0);
+//        if (res == 0) {
+//            throw new PhysFSException("while mounting file " + file + " at mount point " + mountPoint);
+//        }
+    }
+
+    public static void mountArchiveAt(String file, String mountPoint, int appendToSearchPath) {
+//        int res = mountAt(file, mountPoint, appendToSearchPath);
+//        if (res == 0) {
+//            throw new PhysFSException("while mounting file " + file + " at mount point " + mountPoint);
+//        }
     }
 
     private static native int mountAt(String file, String mountPoint, int appendToSearchPath);
@@ -67,10 +81,10 @@ public class PhysFS {
     private static native int exists(String file);
 
     public static void unmountArchive(String file) {
-        int res = unmount(file);
-        if (res == 0) {
-            throw new PhysFSException("while unmounting file " + file);
-        }
+//        int res = unmount(file);
+//        if (res == 0) {
+//            throw new PhysFSException("while unmounting file " + file);
+//        }
     }
 
     private static native int unmount(String file);

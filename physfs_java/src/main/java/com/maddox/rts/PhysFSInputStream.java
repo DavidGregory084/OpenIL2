@@ -10,15 +10,6 @@ public class PhysFSInputStream extends InputStream {
     private long fd;
     private final String fileName;
 
-
-    public PhysFSInputStream(String file, long fingerprint, int hash, int keyLenOffset, int tableIndexOffset) {
-        this.fd = openRead(file);
-        this.fileName = file;
-        if (this.fd == 0) {
-            throw new PhysFSException("while opening file " + file);
-        }
-    }
-
     public PhysFSInputStream(String file) {
         this.fd = openRead(file);
         this.fileName = file;
@@ -165,8 +156,14 @@ public class PhysFSInputStream extends InputStream {
         }
     }
 
-    public static void loadNative() {
+    static void loadNative() {
+        System.loadLibrary("rts");
+        System.loadLibrary("DT");
         System.loadLibrary("physfs_jni");
+    }
+
+    public static boolean dummyCheck() {
+        return false;
     }
 
     static {
