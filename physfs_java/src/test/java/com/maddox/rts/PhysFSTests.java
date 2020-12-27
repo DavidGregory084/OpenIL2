@@ -2,6 +2,7 @@ package com.maddox.rts;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
@@ -10,6 +11,7 @@ import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Disabled
 class PhysFSTests {
     private Path testFilesPath = Paths.get("test-data").resolve("test-files.sfs");
     private Path testFiles2Path = Paths.get("test-data").resolve("test-files2.sfs");
