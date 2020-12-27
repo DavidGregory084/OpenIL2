@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{bail, Context, Result};
 use jni::errors::jni_error_code_to_result;
 use jni::objects::*;
 use jni::*;
@@ -28,7 +28,7 @@ fn get_system_classloader(env: JNIEnv<'_>) -> Result<JObject<'_>> {
 
     match loader_value {
         JValue::Object(jobject) => Ok(jobject),
-        _ => Err(anyhow!("Unable to get system class loader")),
+        _ => bail!("Unable to get system class loader"),
     }
 }
 
@@ -50,7 +50,7 @@ fn load_main_class<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JO
 
     match class_value {
         JValue::Object(jobject) => Ok(jobject),
-        _ => Err(anyhow!("Unable to load main class")),
+        _ => bail!("Unable to load main class"),
     }
 }
 

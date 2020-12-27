@@ -1,4 +1,5 @@
 pub mod finger;
+use anyhow::{anyhow, bail, Context, Result};
 use flate2::bufread::*;
 use memmap::Mmap;
 use nom::bytes::complete::*;
@@ -7,9 +8,7 @@ use nom::number::complete::*;
 use rayon::prelude::*;
 use std::convert::TryInto;
 use std::fs::File;
-use std::io;
 use std::io::prelude::*;
-use std::io::Result;
 use std::path::Path;
 
 #[derive(Debug)]
@@ -36,7 +35,7 @@ pub struct SfsHeader {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SfsTocItem {
-    pub hash: u64,
+    pub fingerprint: i64,
     pub index: u32,
     pub offset: u32,
     pub size: u32,
@@ -80,7 +79,7 @@ pub fn parse_header<'a>(input: &'a [u8]) -> nom::IResult<&'a [u8], SfsHeader> {
 }
 
 pub fn parse_toc_item(input: &[u8]) -> nom::IResult<&[u8], SfsTocItem> {
-    let (rem, hash) = le_u64(input)?;
+    let (rem, fingerprint) = le_i64(input)?;
     let (rem, index) = le_u32(rem)?;
     let (rem, offset) = le_u32(rem)?;
     let (rem, size) = le_u32(rem)?;
@@ -90,7 +89,7 @@ pub fn parse_toc_item(input: &[u8]) -> nom::IResult<&[u8], SfsTocItem> {
     Ok((
         rem,
         SfsTocItem {
-            hash,
+            fingerprint,
             index,
             offset,
             size,
@@ -109,7 +108,7 @@ pub fn parse_toc<'a>(
     many_m_n(toc_count, toc_count, parse_toc_item)(input)
 }
 
-pub fn sfs_decrypt(hash: u64, buf: &[u8]) -> Vec<u8> {
+pub fn sfs_decrypt(hash: i64, buf: &[u8]) -> Vec<u8> {
     let hash_bytes = hash.to_le_bytes();
 
     let new_buf = buf
@@ -127,7 +126,7 @@ pub fn sfs_decrypt(hash: u64, buf: &[u8]) -> Vec<u8> {
     return new_buf;
 }
 
-pub fn sfs_decrypt2(hash: u64, buf: &[u8]) -> Vec<u8> {
+pub fn sfs_decrypt2(hash: i64, buf: &[u8]) -> Vec<u8> {
     let hash_bytes = hash.to_le_bytes();
 
     let new_buf = buf
@@ -286,26 +285,45 @@ pub fn decompress_chunk(sfs_file: &SfsFile, boundary: (usize, usize)) -> Vec<u8>
     }
 }
 
-pub fn unpack_from_sfs_by_hash(
+pub fn decrypt_data(
+    raw_data: Vec<u8>,
+    key_hash: i32,
+    key_len_offset: i32,
+    key_idx_offset: i32,
+) -> Vec<u8> {
+    let xor_table = finger::key_table(key_hash, key_len_offset);
+
+    let decrypted_data = raw_data
+        .iter()
+        .enumerate()
+        .map(|(i, b)| {
+            let table_idx = (i + key_idx_offset as usize) % xor_table.len();
+            let xor_val = xor_table[table_idx];
+            let result = xor_val ^ b;
+            return result;
+        })
+        .collect();
+
+    decrypted_data
+}
+
+pub fn unpack_from_sfs_by_fingerprint(
     sfs_file: &SfsFile,
     decompressed: &Vec<u8>,
-    hash: u64,
-) -> std::io::Result<Vec<u8>> {
+    fingerprint: i64,
+) -> Result<Vec<u8>> {
     let toc_item = sfs_file
         .toc
         .iter()
         .find(|item| {
-            return item.hash == hash;
+            return item.fingerprint == fingerprint;
         })
-        .expect("Couldn't find a matching entry in the SFS file");
+        .context("Couldn't find a matching entry in the SFS file")?;
 
     println!("Found entry at {:?}", toc_item);
 
     if toc_item.size == 0 {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "The file is empty",
-        ));
+        bail!("The file is empty");
     } else {
         let start_offset = toc_item.offset as usize;
         let end_offset = (toc_item.offset + toc_item.size) as usize;
@@ -318,16 +336,13 @@ pub fn unpack_from_sfs_by_path(
     sfs_file: &SfsFile,
     decompressed: &Vec<u8>,
     path: &Path,
-) -> std::io::Result<Vec<u8>> {
+) -> Result<Vec<u8>> {
     if path.is_absolute() {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "The path must be relative to the IL-2 directory",
-        ));
+        bail!("The path must be relative to the game directory");
     } else {
-        let file_path_str = path.as_os_str().to_str().unwrap();
-        let file_path_hash = finger::bytes(0, file_path_str.as_bytes());
-        return unpack_from_sfs_by_hash(sfs_file, decompressed, file_path_hash);
+        let file_path_str = path.as_os_str().to_str().ok_or(anyhow!("Unable to convert path to valid UTF-8 string"))?;
+        let file_path_fingerprint = finger::string(0, file_path_str.to_owned());
+        unpack_from_sfs_by_fingerprint(sfs_file, decompressed, file_path_fingerprint)
     }
 }
 
@@ -337,27 +352,17 @@ pub fn unpack_from_sfs_by_class_name(
     sfs_file: &SfsFile,
     decompressed: &Vec<u8>,
     class_name: String,
-) -> std::io::Result<Vec<u8>> {
+) -> Result<Vec<u8>> {
     let obfuscated_name = format!("sdw{}cwc2w9e", class_name);
     let obfuscated_chars: Vec<i32> = obfuscated_name.chars().map(|c| return c as i32).collect();
-    let class_fingerprint = finger::int(&obfuscated_chars);
-    let class_hash = finger::string(0, format!("cod/{}", class_fingerprint));
-    let xor_table = finger::key_table(class_fingerprint);
-    let raw_class_data = unpack_from_sfs_by_hash(sfs_file, decompressed, class_hash)?;
+    let class_hash = finger::int(&obfuscated_chars);
+    let class_fingerprint = finger::string(0, format!("cod/{}", class_hash));
+    let raw_class_data = unpack_from_sfs_by_fingerprint(sfs_file, decompressed, class_fingerprint)?;
 
     if raw_class_data.starts_with(&CLASS_MAGIC) {
-        return Ok(raw_class_data);
+        Ok(raw_class_data)
     } else {
-        let decrypted_class_data: Vec<u8> = raw_class_data
-            .iter()
-            .enumerate()
-            .map(|(i, b)| {
-                let table_idx = i % xor_table.len();
-                let xor_val = xor_table[table_idx];
-                let result = xor_val ^ b;
-                return result;
-            })
-            .collect();
+        let decrypted_class_data: Vec<u8> = decrypt_data(raw_class_data, class_hash, 14, 0);
 
         let decrypted_class_data_with_header: Vec<u8> =
             [0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x00, 0x00, 0x2F]
@@ -366,38 +371,8 @@ pub fn unpack_from_sfs_by_class_name(
                 .chain(decrypted_class_data)
                 .collect();
 
-        return Ok(decrypted_class_data_with_header);
+        Ok(decrypted_class_data_with_header)
     }
-}
-
-pub fn unpack_from_sfs_by_fingerprint(
-    sfs_file: &SfsFile,
-    decompressed: &Vec<u8>,
-    fingerprint: i32,
-    xor_key: Option<i32>,
-) -> std::io::Result<Vec<u8>> {
-    let fingerprint_hash = finger::string(0, format!("cod/{}", fingerprint));
-    let xor_table = xor_key.map(|key| finger::key_table(key));
-    let raw_data = unpack_from_sfs_by_hash(sfs_file, decompressed, fingerprint_hash)?;
-
-    let decrypted_data: Vec<u8> = xor_table
-        .map(|tbl| {
-            return raw_data
-                .iter()
-                .enumerate()
-                .map(|(i, b)| {
-                    // The Java KryptoInputFilter increments the index before reading each byte,
-                    // so we use i + 1 as our index
-                    let table_idx = (i + 1) % tbl.len();
-                    let xor_val = tbl[table_idx];
-                    let result = xor_val ^ b;
-                    return result;
-                })
-                .collect();
-        })
-        .unwrap_or(raw_data);
-
-    return Ok(decrypted_data);
 }
 
 pub fn decompress_sfs(sfs_file: &SfsFile) -> Result<Vec<u8>> {
@@ -409,7 +384,7 @@ pub fn decompress_sfs(sfs_file: &SfsFile) -> Result<Vec<u8>> {
         })
         .collect();
 
-    return Ok(decompressed);
+    Ok(decompressed)
 }
 
 pub fn unpack_sfs(path: &Path) -> Result<()> {
@@ -421,7 +396,7 @@ pub fn unpack_sfs(path: &Path) -> Result<()> {
             let start_offset = entry.offset as usize;
             let end_offset = (entry.offset + entry.size) as usize;
             let mut data = &decompressed[start_offset..end_offset];
-            let file_name = format!("{:X}.DAT", entry.hash);
+            let file_name = format!("{:X}.DAT", entry.fingerprint);
             let mut file = File::create(file_name).unwrap();
             file.write_all(&mut data).unwrap();
         }

@@ -135,14 +135,14 @@ pub static KEY_TABLE: [u8; 1024] = [
     0x2e, 0x0c, 0xde, 0x1e, 0x0d, 0x74, 0x53, 0x40, 0x68, 0xfd, 0xc4, 0xa2, 0x4b, 0x85, 0x49, 0xfc,
 ];
 
-pub fn key_table(input_hash: i32) -> Vec<u8> {
+pub fn key_table(input_hash: i32, len_offset: i32) -> Vec<u8> {
     let mut hash = input_hash;
 
     if hash < 0 {
         hash = -hash;
     }
 
-    let mut table_len = hash % 16 + 14;
+    let mut table_len = hash % 16 + len_offset;
 
     let start_offset = hash as usize % KEY_TABLE.len();
 
@@ -165,16 +165,20 @@ pub fn key_table(input_hash: i32) -> Vec<u8> {
 }
 
 pub fn int(buf: &[i32]) -> i32 {
-    return buf.iter().fold(0, |h, n| {
+    inc_int(0, buf)
+}
+
+pub fn inc_int(init: i32, buf: &[i32]) -> i32 {
+    buf.iter().fold(init, |h, n| {
         let hash = h as u32;
         let next = *n as u32;
         let hash = ((hash << 8) | (next & 0xFF)) ^ BOTTOM_TABLE[(hash >> 24) as usize];
         let hash = ((hash << 8) | (next >> 8 & 0xFF)) ^ BOTTOM_TABLE[(hash >> 24) as usize];
         return hash as i32;
-    });
+    })
 }
 
-pub fn bytes(hash: u64, buf: &[u8]) -> u64 {
+pub fn bytes(hash: i64, buf: &[u8]) -> i64 {
     // Extract the bottom and top bytes separately
     let bottom = (hash & 0xFFFFFFFF) as u32;
     let top = (hash >> 32 & 0xFFFFFFFF) as u32;
@@ -188,14 +192,14 @@ pub fn bytes(hash: u64, buf: &[u8]) -> u64 {
     });
 
     // Convert back to u64
-    let bot_64 = new_bottom as u64;
-    let top_64 = new_top as u64;
+    let bot_64 = new_bottom as i64;
+    let top_64 = new_top as i64;
 
     // Combine back together
     return bot_64 & 0xFFFFFFFF | top_64 << 32;
 }
 
-pub fn string(hash: u64, name: String) -> u64 {
+pub fn string(hash: i64, name: String) -> i64 {
     // Extract the bottom and top bytes separately
     let bottom = (hash & 0xFFFFFFFF) as u32;
     let top = (hash >> 32 & 0xFFFFFFFF) as u32;
@@ -219,8 +223,8 @@ pub fn string(hash: u64, name: String) -> u64 {
     });
 
     // Convert back to u64
-    let bot_64 = new_bottom as u64;
-    let top_64 = new_top as u64;
+    let bot_64 = new_bottom as i64;
+    let top_64 = new_top as i64;
 
     // Combine back together
     return bot_64 & 0xFFFFFFFF | top_64 << 32;

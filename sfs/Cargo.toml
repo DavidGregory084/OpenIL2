@@ -1,16 +1,17 @@
 [package]
-name = "rts"
+name = "sfs"
 version = "0.1.0"
 authors = ["David Gregory <davidgregory084@gmail.com>"]
 edition = "2018"
 
 [lib]
-name = "rts"
-crate-type = ["rlib", "cdylib"]
+name = "sfs"
+crate-type = ["lib"]
 
 [dependencies]
 memmap = "0.7"
-nom = "5"
-rayon = "1.2"
+nom = "6"
+rayon = "1.5"
 flate2 = "1"
-jni = "0.13"
+jni = "0.18"
+anyhow = "1"
