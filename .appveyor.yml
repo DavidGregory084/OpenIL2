@@ -17,6 +17,7 @@ install:
   # Add cargo build tool and Inno Setup to PATH
   - ps: Set-Item -Path env:PATH -Value ($env:PATH + ";" + $env:USERPROFILE + "\.cargo\bin")
   - ps: Set-Item -Path env:PATH -Value ($env:PATH + ";" + "C:\Program Files (x86)\Inno Setup 6")
+  - cmd: rustup target add x86_64-pc-windows-msvc
 
 build_script:
   # Launcher executable
@@ -30,6 +31,12 @@ build_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_jni
   - cmd: cargo build
   - cmd: cargo build --release
+
+  # SFS repacker
+  #
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\repacker
+  - cmd: cargo build --target x86_64-pc-windows-msvc
+  - cmd: cargo build --release --target x86_64-pc-windows-msvc
 
   # Java PhysFS library
   #
