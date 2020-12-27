@@ -9,3 +9,8 @@ libc = "0.2.80"
 winapi = "0.3.9"
 libloading = "0.6.5"
 jni = { version = "0.18.0", features = ["invocation"] }
+clap = "2.33"
+anyhow = "1"
+
+[build-dependencies]
+built = "0.4"

@@ -1,16 +1,21 @@
 #![allow(non_snake_case)]
 
+use anyhow::{anyhow, Context, Result};
 use jni::errors::jni_error_code_to_result;
 use jni::objects::*;
 use jni::*;
-use std::io::Result;
-use std::io::{Error, ErrorKind};
+extern crate clap;
 extern crate libloading as lib;
+use clap::{App, Arg};
+
+pub mod build_info {
+    include!(concat!(env!("OUT_DIR"), "/built.rs"));
+}
 
 fn get_system_classloader(env: JNIEnv<'_>) -> Result<JObject<'_>> {
     let loader_class = env
         .find_class("java/lang/ClassLoader")
-        .expect("Unable to find Java ClassLoader class");
+        .context("Unable to find Java ClassLoader class")?;
 
     let loader_value = env
         .call_static_method(
@@ -19,14 +24,11 @@ fn get_system_classloader(env: JNIEnv<'_>) -> Result<JObject<'_>> {
             "()Ljava/lang/ClassLoader;",
             &[],
         )
-        .expect("Unable to get system class loader");
+        .context("Unable to get system class loader")?;
 
     match loader_value {
         JValue::Object(jobject) => Ok(jobject),
-        _ => Err(Error::new(
-            ErrorKind::NotFound,
-            "Unable to get system class loader",
-        )),
+        _ => Err(anyhow!("Unable to get system class loader")),
     }
 }
 
@@ -35,7 +37,7 @@ fn load_main_class<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JO
 
     let main_class_name = env
         .new_string(main_class_str)
-        .expect("Unable to create Java String");
+        .context("Unable to create Java String")?;
 
     let class_value = env
         .call_method(
@@ -44,38 +46,77 @@ fn load_main_class<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JO
             "(Ljava/lang/String;Z)Ljava/lang/Class;",
             &[JValue::Object(*main_class_name), JValue::Bool(1)],
         )
-        .expect("Unable to load main class");
+        .context("Unable to load main class")?;
 
     match class_value {
         JValue::Object(jobject) => Ok(jobject),
-        _ => Err(Error::new(ErrorKind::NotFound, "Unable to load main class")),
+        _ => Err(anyhow!("Unable to load main class")),
     }
 }
 
 fn call_main_method(env: JNIEnv<'_>) -> Result<()> {
     let string_class = env
         .find_class("java/lang/String")
-        .expect("Unable to find Java String class");
+        .context("Unable to find Java String class")?;
 
     let main_args = env
         .new_object_array(0, string_class, JObject::null())
-        .expect("Error creating main args array");
+        .context("Error creating main args array")?;
 
-    let _ = env.call_static_method(
+    env.call_static_method(
         "com/maddox/il2/game/GameWin3D",
         "main",
         "([Ljava/lang/String;)V",
         &[JValue::Object(main_args.into())],
-    );
+    )?;
 
     Ok(())
 }
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<()> {
+    let cli_args = App::new("OpenIL2")
+        .version(build_info::PKG_VERSION)
+        .author(build_info::PKG_AUTHORS)
+        .about("A modernised launcher for IL-2 Sturmovik 1946")
+        .arg(
+            Arg::with_name("transform-classes")
+                .long("transform-classes")
+                .short("t")
+                .help("Transforms and dumps the game classes as they are loaded"),
+        )
+        .arg(
+            Arg::with_name("jmx-monitoring")
+                .long("jmx-monitoring")
+                .short("j")
+                .help("Enable JMX monitoring"),
+        )
+        .arg(
+            Arg::with_name("jmx-port")
+                .long("jmx-port")
+                .takes_value(true)
+                .default_value_if("jmx-monitoring", None, "9010")
+                .value_name("port")
+                .help("The port to use for JMX monitoring"),
+        )
+        .arg(
+            Arg::with_name("await-debug")
+                .long("await-debug")
+                .short("d")
+                .help("Suspend and await debug on the given port after startup"),
+        )
+        .arg(
+            Arg::with_name("debug-port")
+                .long("debug-port")
+                .takes_value(true)
+                .default_value_if("await-debug", None, "5005")
+                .value_name("port")
+                .help("The port to use for attaching a debugger"),
+        )
+        .get_matches();
+
     let mut java_arg_bldr = InitArgsBuilder::new()
         .version(JNIVersion::V8)
         .option("-Djava.class.path=.;physfs_java.jar")
-        .option("-javaagent:classload_agent.jar")
         .option("-Djava.locale.providers=COMPAT")
         .option("-XX:+UseShenandoahGC")
         .option("-XX:+AlwaysPreTouch")
@@ -84,22 +125,34 @@ fn main() -> std::io::Result<()> {
         .option("-Xms1000m")
         .option("-Xmx1000m");
 
-    if cfg!(debug_assertions) {
+    if cli_args.is_present("transform-classes") {
+        java_arg_bldr = java_arg_bldr.option("-javaagent:classload_agent.jar");
+    }
+
+    if cli_args.is_present("await-debug") {
+        let debug_port = cli_args.value_of("debug-port").unwrap();
+        java_arg_bldr = java_arg_bldr.option(&format!(
+            "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:{}",
+            debug_port
+        ));
+    }
+
+    if cli_args.is_present("jmx-monitoring") {
+        let jmx_port = cli_args.value_of("jmx-port").unwrap();
         java_arg_bldr = java_arg_bldr
-            .option("-Xlog:gc+stats")
-            .option("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005")
             .option("-Dcom.sun.management.jmxremote.host=127.0.0.1")
-            .option("-Dcom.sun.management.jmxremote.port=9010")
-            .option("-Dcom.sun.management.jmxremote.rmi.port=9010")
+            .option(&format!("-Dcom.sun.management.jmxremote.port={}", jmx_port))
+            .option(&format!(
+                "-Dcom.sun.management.jmxremote.rmi.port={}",
+                jmx_port
+            ))
             .option("-Dcom.sun.management.jmxremote.authenticate=false")
             .option("-Dcom.sun.management.jmxremote.ssl=false");
     }
 
     let java_args = java_arg_bldr
         .build()
-        .expect("Failed to create Java VM args");
-
-    println!("Created Java VM args");
+        .context("Failed to create Java VM args")?;
 
     // Ugly workaround for inner field of InitArgs being private;
     // we need it to call the JNI_CreateJavaVM function dynamically
@@ -110,11 +163,9 @@ fn main() -> std::io::Result<()> {
 
     let mut raw_java_args: VMInitArgs = unsafe { std::mem::transmute(java_args) };
 
-    let lib = lib::Library::new("./bin/server/jvm.dll").expect("Unable to find jvm.dll");
+    let lib = lib::Library::new("./bin/server/jvm.dll").context("Unable to find jvm.dll")?;
     let mut raw_java_vm: *mut sys::JavaVM = std::ptr::null_mut();
     let mut raw_env: *mut sys::JNIEnv = std::ptr::null_mut();
-
-    println!("Found jvm.dll");
 
     let JNI_CreateJavaVM: lib::Symbol<
         unsafe extern "C" fn(
@@ -124,10 +175,8 @@ fn main() -> std::io::Result<()> {
         ) -> sys::jint,
     > = unsafe {
         lib.get(b"JNI_CreateJavaVM\0")
-            .expect("Unable to find JNI_CreateJavaVM function")
+            .context("Unable to find JNI_CreateJavaVM function")?
     };
-
-    println!("Found JNI_CreateJavaVM function");
 
     unsafe {
         jni_error_code_to_result(JNI_CreateJavaVM(
@@ -135,26 +184,20 @@ fn main() -> std::io::Result<()> {
             &mut raw_env,
             &mut raw_java_args.inner,
         ))
-        .expect("Error creating Java VM")
+        .context("Error creating Java VM")?
     };
 
-    let java_vm = unsafe { JavaVM::from_raw(raw_java_vm).unwrap() };
+    let java_vm = unsafe { JavaVM::from_raw(raw_java_vm)? };
 
     let attach_guard = java_vm
         .attach_current_thread()
-        .expect("Error attaching current thread to Java VM");
-
-    println!("Attached current thread to Java VM");
+        .context("Error attaching current thread to Java VM")?;
 
     let env = *attach_guard;
 
     let system_loader = get_system_classloader(env)?;
 
-    println!("Fetched system classloader");
-
     load_main_class(env, system_loader)?;
-
-    println!("Loaded main class");
 
     call_main_method(env)?;
 
