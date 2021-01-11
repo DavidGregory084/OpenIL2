@@ -174,9 +174,9 @@ fn unpack_sfs(
 
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
-    let game_dir = Path::new(&args[0]).to_owned();
-    let tmp_dir = Path::new(&args[1]).to_owned();
-    let sfs_file = game_dir.clone().join(&args[2]);
+    let game_dir = Path::new(&args[1]).to_owned();
+    let tmp_dir = Path::new(&args[2]).to_owned();
+    let sfs_file = game_dir.clone().join(&args[3]);
     let sfs_db = game_dir.clone().join("sfs_db.sqlite");
     let connection = Connection::open(sfs_db).context("Unable to connect to SFS database")?;
 
