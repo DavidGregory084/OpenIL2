@@ -14,3 +14,6 @@ anyhow = "1"
 
 [build-dependencies]
 built = "0.4"
+
+[profile.release]
+opt-level = 1

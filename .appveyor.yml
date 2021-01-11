@@ -90,7 +90,7 @@ after_test:
 
 artifacts:
   - path: installer\output\openil2-installer-debug.exe
-    name: OpenIL2 Installer (Debug Mode)
+    name: OpenIL2 Installer (Debug Build)
 
   - path: installer\output\openil2-installer.exe
     name: OpenIL2 Installer
@@ -98,12 +98,17 @@ artifacts:
   - path: launcher\target\release\openil2.exe
     name: OpenIL2 Launcher
   - path: launcher\target\debug\openil2.exe
-    name: OpenIL2 Launcher (Debug Mode)
+    name: OpenIL2 Launcher (Debug Build)
+
+  - path: repacker\target\release\repacker.exe
+    name: SFS Repacker
+  - path: repacker\target\debug\repacker.exe
+    name: SFS Repacker (Debug Build)
 
   - path: physfs_jni\target\release\physfs_jni.dll
     name: PhysFS JNI DLL
   - path: physfs_jni\target\debug\physfs_jni.dll
-    name: PhysFS JNI DLL (Debug Mode)
+    name: PhysFS JNI DLL (Debug Build)
 
   - path: physfs_java\build\libs\physfs_java.jar
     name: PhysFS Java JAR

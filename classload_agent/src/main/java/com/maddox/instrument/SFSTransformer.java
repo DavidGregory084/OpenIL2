@@ -70,6 +70,8 @@ public class SFSTransformer implements ClassFileTransformer {
     static Type DUMMY_INPUT_FILTER_TYPE = Type.getType("Lcom/maddox/rts/DummyInputFilter;");
     static Type DUMMY_OUTPUT_FILTER_TYPE = Type.getType("Lcom/maddox/rts/DummyOutputFilter;");
 
+    static Type FLIGHT_MODEL_MAIN_TYPE = Type.getType("Lcom/maddox/il2/fm/FlightModelMain;");
+
     static Type SFS_MOUNT_DESCRIPTOR1 = Type.getMethodType(Type.VOID_TYPE, Type.getType(String.class));
     static Type SFS_MOUNT_DESCRIPTOR2 = Type.getMethodType(Type.VOID_TYPE, Type.getType(String.class), Type.INT_TYPE);
     static Type SFS_MOUNT_AS_DESCRIPTOR1 = Type.getMethodType(Type.VOID_TYPE, Type.getType(String.class), Type.getType(String.class));
@@ -93,7 +95,10 @@ public class SFSTransformer implements ClassFileTransformer {
                 SFS_EXCEPTION_TYPE.getInternalName(),
                 SFS_INPUT_STREAM_TYPE.getInternalName(),
                 KRYPTO_INPUT_FILTER_TYPE.getInternalName(),
-                KRYPTO_OUTPUT_FILTER_TYPE.getInternalName()
+                KRYPTO_OUTPUT_FILTER_TYPE.getInternalName(),
+
+                // Don't transform FlightModelMain because it decrypts FMs using KryptoInputFilter
+                FLIGHT_MODEL_MAIN_TYPE.getInternalName()
         );
 
         rewriteMappings = Map.ofEntries(

@@ -1,3 +1,4 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![allow(non_snake_case)]
 
 use anyhow::{bail, Context, Result};
@@ -15,7 +16,12 @@ pub mod build_info {
 fn get_system_classloader(env: JNIEnv<'_>) -> Result<JObject<'_>> {
     let loader_class = env
         .find_class("java/lang/ClassLoader")
-        .context("Unable to find Java ClassLoader class")?;
+        .with_context(|| {
+            if env.exception_check().unwrap() {
+                env.exception_describe().unwrap()
+            };
+            "Unable to find Java ClassLoader class"
+        })?;
 
     let loader_value = env
         .call_static_method(
@@ -23,8 +29,12 @@ fn get_system_classloader(env: JNIEnv<'_>) -> Result<JObject<'_>> {
             "getSystemClassLoader",
             "()Ljava/lang/ClassLoader;",
             &[],
-        )
-        .context("Unable to get system class loader")?;
+        ).with_context(|| {
+            if env.exception_check().unwrap() {
+                env.exception_describe().unwrap()
+            };
+            "Unable to get system class loader"
+        })?;
 
     match loader_value {
         JValue::Object(jobject) => Ok(jobject),
@@ -37,16 +47,26 @@ fn load_main_class<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JO
 
     let main_class_name = env
         .new_string(main_class_str)
-        .context("Unable to create Java String")?;
+        .with_context(|| {
+            if env.exception_check().unwrap() {
+                env.exception_describe().unwrap()
+            };
+            "Unable to create Java String"
+        })?;
 
     let class_value = env
         .call_method(
-            *system_loader,
+            system_loader,
             "loadClass",
             "(Ljava/lang/String;Z)Ljava/lang/Class;",
             &[JValue::Object(*main_class_name), JValue::Bool(1)],
         )
-        .context("Unable to load main class")?;
+        .with_context(|| {
+            if env.exception_check().unwrap() {
+                env.exception_describe().unwrap()
+            };
+            "Unable to load main class"
+        })?;
 
     match class_value {
         JValue::Object(jobject) => Ok(jobject),
@@ -57,18 +77,33 @@ fn load_main_class<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JO
 fn call_main_method(env: JNIEnv<'_>) -> Result<()> {
     let string_class = env
         .find_class("java/lang/String")
-        .context("Unable to find Java String class")?;
+        .with_context(|| {
+            if env.exception_check().unwrap() {
+                env.exception_describe().unwrap()
+            };
+            "Unable to find Java String class"
+        })?;
 
     let main_args = env
         .new_object_array(0, string_class, JObject::null())
-        .context("Error creating main args array")?;
+        .with_context(|| {
+            if env.exception_check().unwrap() {
+                env.exception_describe().unwrap()
+            };
+            "Error creating main args array"
+        })?;
 
     env.call_static_method(
         "com/maddox/il2/game/GameWin3D",
         "main",
         "([Ljava/lang/String;)V",
         &[JValue::Object(main_args.into())],
-    )?;
+    ).with_context(|| {
+        if env.exception_check().unwrap() {
+            env.exception_describe().unwrap()
+        };
+        "Unable to call main method"
+    })?;
 
     Ok(())
 }
@@ -116,7 +151,7 @@ fn main() -> Result<()> {
 
     let mut java_arg_bldr = InitArgsBuilder::new()
         .version(JNIVersion::V8)
-        .option("-Djava.class.path=.;physfs_java.jar")
+        .option("-Djava.class.path=.;physfs_java.jar;sqlite-jdbc-3.34.0.jar")
         .option("-Djava.locale.providers=COMPAT")
         .option("-XX:+UseShenandoahGC")
         .option("-XX:+AlwaysPreTouch")

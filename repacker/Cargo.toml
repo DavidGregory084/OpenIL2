@@ -5,3 +5,9 @@ authors = ["David Gregory <davidgregory084@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+sfs = { path = '../sfs' }
+anyhow = "1"
+dunce = "1"
+indicatif = "0.15"
+rusqlite = { version = "0.24", features = ["bundled"] }
+zip = { version = "0.5.9", features = ["deflate"] }

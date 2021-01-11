@@ -199,7 +199,7 @@ pub fn bytes(hash: i64, buf: &[u8]) -> i64 {
     return bot_64 & 0xFFFFFFFF | top_64 << 32;
 }
 
-pub fn string(hash: i64, name: String) -> i64 {
+pub fn string(hash: i64, name: &str) -> i64 {
     // Extract the bottom and top bytes separately
     let bottom = (hash & 0xFFFFFFFF) as u32;
     let top = (hash >> 32 & 0xFFFFFFFF) as u32;

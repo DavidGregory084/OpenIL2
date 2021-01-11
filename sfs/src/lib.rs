@@ -1,6 +1,7 @@
 pub mod finger;
 use anyhow::{anyhow, bail, Context, Result};
 use flate2::bufread::*;
+use indicatif::{ProgressBar, ProgressStyle};
 use memmap::Mmap;
 use nom::bytes::complete::*;
 use nom::multi::*;
@@ -246,8 +247,6 @@ pub fn read_sfs(path: &Path) -> Result<SfsFile> {
         })
         .collect();
 
-    println!("{:?}", decrypted_header);
-
     Ok(SfsFile {
         mmap,
         header: decrypted_header,
@@ -261,7 +260,6 @@ pub fn decompress_chunk(sfs_file: &SfsFile, boundary: (usize, usize)) -> Vec<u8>
     let chunk = &sfs_file.mmap[start..end];
 
     if chunk.len() == 32768 {
-        println!("Decompressing max size chunk at {:?},{:?}", start, end);
         chunk.to_vec()
     } else if chunk[0] == 1 {
         panic!("Can't do LZSS yet!")
@@ -320,8 +318,6 @@ pub fn unpack_from_sfs_by_fingerprint(
         })
         .context("Couldn't find a matching entry in the SFS file")?;
 
-    println!("Found entry at {:?}", toc_item);
-
     if toc_item.size == 0 {
         bail!("The file is empty");
     } else {
@@ -340,8 +336,10 @@ pub fn unpack_from_sfs_by_path(
     if path.is_absolute() {
         bail!("The path must be relative to the game directory");
     } else {
-        let file_path_str = path.as_os_str().to_str().ok_or(anyhow!("Unable to convert path to valid UTF-8 string"))?;
-        let file_path_fingerprint = finger::string(0, file_path_str.to_owned());
+        let file_path_str = path
+            .to_str()
+            .ok_or(anyhow!("Unable to convert path to valid UTF-8 string"))?;
+        let file_path_fingerprint = finger::string(0, file_path_str);
         unpack_from_sfs_by_fingerprint(sfs_file, decompressed, file_path_fingerprint)
     }
 }
@@ -356,7 +354,7 @@ pub fn unpack_from_sfs_by_class_name(
     let obfuscated_name = format!("sdw{}cwc2w9e", class_name);
     let obfuscated_chars: Vec<i32> = obfuscated_name.chars().map(|c| return c as i32).collect();
     let class_hash = finger::int(&obfuscated_chars);
-    let class_fingerprint = finger::string(0, format!("cod/{}", class_hash));
+    let class_fingerprint = finger::string(0, &format!("cod/{}", class_hash));
     let raw_class_data = unpack_from_sfs_by_fingerprint(sfs_file, decompressed, class_fingerprint)?;
 
     if raw_class_data.starts_with(&CLASS_MAGIC) {
@@ -376,11 +374,20 @@ pub fn unpack_from_sfs_by_class_name(
 }
 
 pub fn decompress_sfs(sfs_file: &SfsFile) -> Result<Vec<u8>> {
+    let progress = ProgressBar::new(sfs_file.header.uncompressed_size as u64);
+    progress.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+            .progress_chars("#>-"),
+    );
+
     let decompressed: Vec<u8> = sfs_file
         .chunk_boundaries
-        .par_iter()
+        .iter()
         .flat_map(|boundary| {
-            return decompress_chunk(&sfs_file, *boundary);
+            let decompressed = decompress_chunk(&sfs_file, *boundary);
+            progress.inc(decompressed.len() as u64);
+            decompressed
         })
         .collect();
 
