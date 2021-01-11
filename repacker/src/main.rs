@@ -1,9 +1,9 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use indicatif::{ProgressBar, ProgressStyle};
 use io::BufWriter;
 use rusqlite::{params, Connection, Statement};
-use std::fs::{DirEntry, File};
-use std::io::{self, Write};
+use std::{fs::{DirEntry, File}, process::Command};
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 
 struct SfsEntry {
@@ -15,11 +15,48 @@ struct SfsEntry {
     key_idx_offset: Option<i32>,
 }
 
+fn transform_class(
+    game_dir: PathBuf,
+    tmp_dir: PathBuf,
+    sfs_entry: &SfsEntry,
+    class_data: Vec<u8>
+) -> Result<Vec<u8>> {
+    let class_file_rel_path = PathBuf::from(sfs_entry.file_name.clone());
+    let class_path = tmp_dir.join(class_file_rel_path.clone());
+    let class_dir = class_path.parent().ok_or(anyhow!("Unable to get parent directory for {}", class_path.display()))?;
+    std::fs::create_dir_all(class_dir)?;
+    let class_file = File::create(class_path.clone()).context(anyhow!("Creating file {}", class_path.display()))?;
+    let mut class_writer= BufWriter::new(class_file);
+
+    class_writer.write_all(&class_data).context("Writing")?;
+    class_writer.flush().context("Flushing")?;
+
+    let output= Command::new("./bin/java.exe") 
+        .arg("-jar")
+        .arg("classload_agent.jar")
+        .arg(class_path.clone())
+        .current_dir(game_dir)
+        .output()
+        .context("Running Java")?;
+    
+    if !output.status.success() {
+        io::stdout().write_all(&output.stdout)?;
+        io::stderr().write_all(&output.stderr)?;
+        bail!("Error transforming class file {}", class_path.display());
+    } else {
+        let mut buffer = Vec::new();
+        let mut class_file = File::open(class_path.clone())?;
+        class_file.read_to_end(&mut buffer)?;
+        Ok(buffer)
+    }
+}
+
 fn unpack_sfs(
     size_stmt: &mut Statement,
     count_stmt: &mut Statement,
     entries_stmt: &mut Statement,
     game_dir: PathBuf,
+    tmp_dir: PathBuf,
     entry: DirEntry,
 ) -> Result<()> {
     let file_name = entry.file_name().to_string_lossy().into_owned();
@@ -112,14 +149,17 @@ fn unpack_sfs(
                         let class_name =
                             sfs_entry.file_name.replace(".class", "").replace("/", ".");
 
-                        sfs::unpack_from_sfs_by_class_name(
+                        let class_data = sfs::unpack_from_sfs_by_class_name(
                             &sfs_file,
                             &decompressed,
                             class_name.to_string(),
                         )
                         .with_context(|| {
                             format!("Unable to extract class {} from {}", class_name, file_name)
-                        })?
+                        })?;
+
+                        transform_class(game_dir.clone(), tmp_dir.clone(), &sfs_entry, class_data)?
+
                     } else {
                         let raw_data = sfs::unpack_from_sfs_by_fingerprint(
                             &sfs_file,
@@ -218,6 +258,7 @@ fn main() -> Result<()> {
                     &mut count_stmt,
                     &mut entries_stmt,
                     game_dir.clone(),
+                    tmp_dir.clone(),
                     entry,
                 )?;
             }

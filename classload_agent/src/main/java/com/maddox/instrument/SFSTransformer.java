@@ -8,6 +8,7 @@ import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.util.CheckClassAdapter;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.nio.file.Files;
@@ -128,6 +129,10 @@ public class SFSTransformer implements ClassFileTransformer {
     }
 
     public byte[] transform(ClassLoader classLoader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classFileBuffer) throws IllegalClassFormatException {
+        return transform(className, classFileBuffer);
+    }
+
+    public byte[] transform(String className, byte[] classFileBuffer) {
         try {
             if (!className.startsWith("com/maddox/")) {
                 return classFileBuffer;
@@ -188,5 +193,14 @@ public class SFSTransformer implements ClassFileTransformer {
             throwable.printStackTrace(System.err);
             return classFileBuffer;
         }
+    }
+
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
+        var classFilePath = Paths.get(args[0]);
+        var classFileBytes = Files.readAllBytes(classFilePath);
+        var className = new ClassReader(classFileBytes).getClassName();
+        var transformer = new SFSTransformer();
+        var transformedBytes = transformer.transform(className, classFileBytes);
+        Files.write(classFilePath, transformedBytes, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
     }
 }

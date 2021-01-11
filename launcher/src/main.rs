@@ -14,14 +14,12 @@ pub mod build_info {
 }
 
 fn get_system_classloader(env: JNIEnv<'_>) -> Result<JObject<'_>> {
-    let loader_class = env
-        .find_class("java/lang/ClassLoader")
-        .with_context(|| {
-            if env.exception_check().unwrap() {
-                env.exception_describe().unwrap()
-            };
-            "Unable to find Java ClassLoader class"
-        })?;
+    let loader_class = env.find_class("java/lang/ClassLoader").with_context(|| {
+        if env.exception_check().unwrap() {
+            env.exception_describe().unwrap()
+        };
+        "Unable to find Java ClassLoader class"
+    })?;
 
     let loader_value = env
         .call_static_method(
@@ -29,7 +27,8 @@ fn get_system_classloader(env: JNIEnv<'_>) -> Result<JObject<'_>> {
             "getSystemClassLoader",
             "()Ljava/lang/ClassLoader;",
             &[],
-        ).with_context(|| {
+        )
+        .with_context(|| {
             if env.exception_check().unwrap() {
                 env.exception_describe().unwrap()
             };
@@ -42,24 +41,24 @@ fn get_system_classloader(env: JNIEnv<'_>) -> Result<JObject<'_>> {
     }
 }
 
-fn load_main_class<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JObject<'a>> {
-    let main_class_str = "com.maddox.il2.game.GameWin3D";
-
-    let main_class_name = env
-        .new_string(main_class_str)
-        .with_context(|| {
-            if env.exception_check().unwrap() {
-                env.exception_describe().unwrap()
-            };
-            "Unable to create Java String"
-        })?;
+fn load_class<'a>(
+    env: JNIEnv<'a>,
+    system_loader: JObject<'a>,
+    class_name_str: &str,
+) -> Result<JObject<'a>> {
+    let class_name = env.new_string(class_name_str).with_context(|| {
+        if env.exception_check().unwrap() {
+            env.exception_describe().unwrap()
+        };
+        "Unable to create Java String"
+    })?;
 
     let class_value = env
         .call_method(
             system_loader,
             "loadClass",
             "(Ljava/lang/String;Z)Ljava/lang/Class;",
-            &[JValue::Object(*main_class_name), JValue::Bool(1)],
+            &[JValue::Object(*class_name), JValue::Bool(1)],
         )
         .with_context(|| {
             if env.exception_check().unwrap() {
@@ -74,15 +73,47 @@ fn load_main_class<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JO
     }
 }
 
+fn load_physfs_class<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JObject<'a>> {
+    let physfs_class_str = "com.maddox.rts.PhysFS";
+    load_class(env, system_loader, physfs_class_str)
+}
+
+fn load_main_class<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JObject<'a>> {
+    let main_class_str = "com.maddox.il2.game.GameWin3D";
+    load_class(env, system_loader, main_class_str)
+}
+
+fn mount_files_zip(env: JNIEnv<'_>) -> Result<()> {
+    let files_zip = env.new_string("files.zip").with_context(|| {
+        if env.exception_check().unwrap() {
+            env.exception_describe().unwrap()
+        };
+        "Unable to create Java String"
+    })?;
+
+    env.call_static_method(
+        "com/maddox/rts/PhysFS",
+        "mountArchive",
+        "(Ljava/lang/String;)V",
+        &[JValue::Object(*files_zip)],
+    )
+    .with_context(|| {
+        if env.exception_check().unwrap() {
+            env.exception_describe().unwrap()
+        };
+        "Unable to call PhysFS mountArchive method"
+    })?;
+
+    Ok(())
+}
+
 fn call_main_method(env: JNIEnv<'_>) -> Result<()> {
-    let string_class = env
-        .find_class("java/lang/String")
-        .with_context(|| {
-            if env.exception_check().unwrap() {
-                env.exception_describe().unwrap()
-            };
-            "Unable to find Java String class"
-        })?;
+    let string_class = env.find_class("java/lang/String").with_context(|| {
+        if env.exception_check().unwrap() {
+            env.exception_describe().unwrap()
+        };
+        "Unable to find Java String class"
+    })?;
 
     let main_args = env
         .new_object_array(0, string_class, JObject::null())
@@ -98,7 +129,8 @@ fn call_main_method(env: JNIEnv<'_>) -> Result<()> {
         "main",
         "([Ljava/lang/String;)V",
         &[JValue::Object(main_args.into())],
-    ).with_context(|| {
+    )
+    .with_context(|| {
         if env.exception_check().unwrap() {
             env.exception_describe().unwrap()
         };
@@ -232,7 +264,25 @@ fn main() -> Result<()> {
 
     let system_loader = get_system_classloader(env)?;
 
-    load_main_class(env, system_loader)?;
+    load_class(env, system_loader, "com.maddox.rts.PhysFS")?;
+
+    mount_files_zip(env)?;
+
+    load_class(env, system_loader, "com.maddox.rts.PhysFSLoader")?;
+
+    let physfs_loader = env.new_object(
+        "com/maddox/rts/PhysFSLoader",
+        "(Ljava/lang/ClassLoader;)V", 
+        &[JValue::Object(system_loader)],
+    ) 
+    .with_context(|| {
+        if env.exception_check().unwrap() {
+            env.exception_describe().unwrap()
+        };
+        "Unable to create PhysFSLoader"
+    })?;
+
+    load_class(env, physfs_loader, "com.maddox.il2.game.GameWin3D")?;
 
     call_main_method(env)?;
 
