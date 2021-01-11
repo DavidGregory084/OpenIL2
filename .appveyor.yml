@@ -36,8 +36,8 @@ build_script:
   # SFS repacker
   #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\repacker
-  - cmd: cargo build --target x86_64-pc-windows-msvc
-  - cmd: cargo build --release --target x86_64-pc-windows-msvc
+  - cmd: cargo build
+  - cmd: cargo build --release
 
   # Java PhysFS library
   #

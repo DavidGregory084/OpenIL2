@@ -151,7 +151,7 @@ fn main() -> Result<()> {
 
     let mut java_arg_bldr = InitArgsBuilder::new()
         .version(JNIVersion::V8)
-        .option("-Djava.class.path=.;physfs_java.jar;sqlite-jdbc-3.34.0.jar")
+        .option("-Djava.class.path=.;physfs_java.jar")
         .option("-Djava.locale.providers=COMPAT")
         .option("-XX:+UseShenandoahGC")
         .option("-XX:+AlwaysPreTouch")
