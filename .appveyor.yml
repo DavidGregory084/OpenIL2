@@ -17,6 +17,7 @@ install:
   # Add cargo build tool and Inno Setup to PATH
   - ps: Set-Item -Path env:PATH -Value ($env:PATH + ";" + $env:USERPROFILE + "\.cargo\bin")
   - ps: Set-Item -Path env:PATH -Value ($env:PATH + ";" + "C:\Program Files (x86)\Inno Setup 6")
+  - cmd: rustup toolchain install stable-x86_64-pc-windows-msvc
   - cmd: rustup target add x86_64-pc-windows-msvc
 
 build_script:
