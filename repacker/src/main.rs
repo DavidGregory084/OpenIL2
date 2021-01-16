@@ -1,10 +1,13 @@
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Context, Result};
 use indicatif::{ProgressBar, ProgressStyle};
 use io::BufWriter;
 use rusqlite::{params, Connection, Statement};
-use std::{fs::{DirEntry, File}, process::Command};
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
+use std::{
+    fs::{DirEntry, File},
+    process::{Command, Stdio},
+};
 
 struct SfsEntry {
     file_name: String,
@@ -15,40 +18,21 @@ struct SfsEntry {
     key_idx_offset: Option<i32>,
 }
 
-fn transform_class(
-    game_dir: PathBuf,
-    tmp_dir: PathBuf,
-    sfs_entry: &SfsEntry,
-    class_data: Vec<u8>
-) -> Result<Vec<u8>> {
-    let class_file_rel_path = PathBuf::from(sfs_entry.file_name.clone());
-    let class_path = tmp_dir.join(class_file_rel_path.clone());
-    let class_dir = class_path.parent().ok_or(anyhow!("Unable to get parent directory for {}", class_path.display()))?;
-    std::fs::create_dir_all(class_dir)?;
-    let class_file = File::create(class_path.clone()).context(anyhow!("Creating file {}", class_path.display()))?;
-    let mut class_writer= BufWriter::new(class_file);
+fn transform_class(game_dir: PathBuf, class_data: Vec<u8>) -> Result<Vec<u8>> {
+    let mut cmd = Command::new("./class-transformer.exe");
 
-    class_writer.write_all(&class_data).context("Writing")?;
-    class_writer.flush().context("Flushing")?;
-
-    let output= Command::new("./bin/java.exe") 
-        .arg("-jar")
-        .arg("classload_agent.jar")
-        .arg(class_path.clone())
+    let process = cmd
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
         .current_dir(game_dir)
-        .output()
-        .context("Running Java")?;
-    
-    if !output.status.success() {
-        io::stdout().write_all(&output.stdout)?;
-        io::stderr().write_all(&output.stderr)?;
-        bail!("Error transforming class file {}", class_path.display());
-    } else {
-        let mut buffer = Vec::new();
-        let mut class_file = File::open(class_path.clone())?;
-        class_file.read_to_end(&mut buffer)?;
-        Ok(buffer)
-    }
+        .spawn()
+        .context("Running Class Transformer")?;
+
+    let mut transformed_data = Vec::new();
+    process.stdin.unwrap().write_all(&class_data)?;
+    process.stdout.unwrap().read_to_end(&mut transformed_data)?;
+
+    Ok(transformed_data)
 }
 
 fn unpack_sfs(
@@ -56,7 +40,6 @@ fn unpack_sfs(
     count_stmt: &mut Statement,
     entries_stmt: &mut Statement,
     game_dir: PathBuf,
-    tmp_dir: PathBuf,
     entry: DirEntry,
 ) -> Result<()> {
     let file_name = entry.file_name().to_string_lossy().into_owned();
@@ -158,8 +141,7 @@ fn unpack_sfs(
                             format!("Unable to extract class {} from {}", class_name, file_name)
                         })?;
 
-                        transform_class(game_dir.clone(), tmp_dir.clone(), &sfs_entry, class_data)?
-
+                        transform_class(game_dir.clone(), class_data)?
                     } else {
                         let raw_data = sfs::unpack_from_sfs_by_fingerprint(
                             &sfs_file,
@@ -215,7 +197,7 @@ fn unpack_sfs(
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let game_dir = Path::new(&args[1]).to_owned();
-    let tmp_dir = Path::new(&args[2]).to_owned();
+    let _tmp_dir = Path::new(&args[2]).to_owned();
     let sfs_file = game_dir.clone().join(&args[3]);
     let sfs_db = game_dir.clone().join("sfs_db.sqlite");
     let connection = Connection::open(sfs_db).context("Unable to connect to SFS database")?;
@@ -258,7 +240,6 @@ fn main() -> Result<()> {
                     &mut count_stmt,
                     &mut entries_stmt,
                     game_dir.clone(),
-                    tmp_dir.clone(),
                     entry,
                 )?;
             }

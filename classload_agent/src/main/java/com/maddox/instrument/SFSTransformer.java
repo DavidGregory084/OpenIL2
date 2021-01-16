@@ -7,8 +7,10 @@ import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.util.CheckClassAdapter;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PipedInputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.nio.file.Files;
@@ -177,11 +179,29 @@ public class SFSTransformer implements ClassFileTransformer {
     }
 
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
-        var classFilePath = Paths.get(args[0]);
-        var classFileBytes = Files.readAllBytes(classFilePath);
+        byte[] classFileBytes;
+        var buffer = new byte[4096];
+
+        if (args.length > 0) {
+            classFileBytes = Files.readAllBytes(Paths.get(args[0]));
+        } else {
+            var outputStream = new ByteArrayOutputStream();
+            while (System.in.read(buffer) > 0) {
+                outputStream.write(buffer);
+            }
+            classFileBytes = outputStream.toByteArray();
+        }
+
         var className = new ClassReader(classFileBytes).getClassName();
-        var transformer = new SFSTransformer();
-        var transformedBytes = transformer.transform(className, classFileBytes);
-        Files.write(classFilePath, transformedBytes, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+        var transformedBytes = new SFSTransformer().transform(className, classFileBytes);
+
+        if (args.length > 0) {
+            Files.write(Paths.get(args[0]), transformedBytes, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+        } else {
+            var inputStream = new ByteArrayInputStream(transformedBytes);
+            while (inputStream.read(buffer) > 0) {
+                System.out.write(buffer);
+            }
+        }
     }
 }

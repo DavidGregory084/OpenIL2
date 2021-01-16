@@ -6,8 +6,11 @@ environment:
   RUST_BACKTRACE: "1"
 
 install:
-  # Install 32-bit versions of LLVM and JDK11
+  # Install 32-bit versions of LLVM, GraalVM and JDK11
   - cinst llvm --x86
+  - cinst graalvm --version 20.3.0
+  # Set GraalVM home variable separately
+  - ps: Set-Item -Path env:GRAALVM_HOME -Value ($env:ProgramFiles + "\GraalVM\graalvm-ce-java11-20.3.0")
   - cinst adoptopenjdk11 --x86 --params="/ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome /INSTALLDIR=%ProgramFiles%\AdoptOpenJDK"
   # Refresh environment variables to ensure JAVA_HOME has been updated
   - cmd: refreshenv
@@ -50,6 +53,7 @@ build_script:
   #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: .\gradlew.bat :classload_agent:jar
+  - cmd: .\gradlew.bat :classload_agent:nativeImage
 
   # Custom JRE with JMX debugging support
   #
@@ -120,6 +124,9 @@ artifacts:
 
   - path: classload_agent\build\libs\classload_agent.jar
     name: Class Loading Agent JAR
+
+  - path: classload_agent\build\executable\class-transformer.exe
+    name: Class Transformer
 
 cache:
   - '%USERPROFILE%\.cargo'

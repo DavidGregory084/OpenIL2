@@ -51,7 +51,13 @@ nativeImage {
     mainClass = "com.maddox.instrument.SFSTransformer"
     executableName = "class-transformer"
     outputDirectory = file("$buildDir/executable")
-//    arguments(
-//            "--report-unsupported-elements-at-runtime"
-//    )
+}
+
+generateNativeImageConfig {
+    enabled = true
+    byRunningApplication {
+        stdIn(
+               File("$projectDir\\Example.class").readBytes()
+        )
+    }
 }
