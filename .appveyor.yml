@@ -24,8 +24,7 @@ install:
   - cmd: rustup toolchain install stable-x86_64-pc-windows-msvc
   - cmd: rustup target add x86_64-pc-windows-msvc
   # Set up C++ compiler environment for native-image
-  - cinst visualstudio2017-workload-vctools
-  - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - cmd: %comspec% /k "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
 
 build_script:
   # Class loading agent
