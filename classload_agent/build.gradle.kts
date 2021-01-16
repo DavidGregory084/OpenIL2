@@ -1,5 +1,6 @@
 plugins {
     java
+    id("org.mikeneck.graalvm-native-image") version "v1.0.0"
 }
 
 repositories {
@@ -42,4 +43,15 @@ tasks.jar {
                 "Implementation-Version" to rootProject.version
         ))
     }
+}
+
+nativeImage {
+    resources
+    graalVmHome = System.getenv("GRAALVM_HOME")
+    mainClass = "com.maddox.instrument.SFSTransformer"
+    executableName = "class-transformer"
+    outputDirectory = file("$buildDir/executable")
+//    arguments(
+//            "--report-unsupported-elements-at-runtime"
+//    )
 }

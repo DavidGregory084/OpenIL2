@@ -166,25 +166,6 @@ public class SFSTransformer implements ClassFileTransformer {
                 if (Arrays.equals(classFileBuffer, patchedBuffer)) {
                     return classFileBuffer;
                 } else {
-                    var dirs = className.split("/");
-                    var classFilePath = Paths.get(".");
-
-                    for (int i = 0; i < dirs.length; i++) {
-                        if (i == (dirs.length - 1)) {
-                            classFilePath = classFilePath.resolve(String.format("%s.class", dirs[i]));
-                        } else {
-                            classFilePath = classFilePath.resolve(dirs[i]);
-                        }
-                    }
-
-                    Files.write(
-                            classFilePath,
-                            patchedBuffer,
-                            StandardOpenOption.CREATE,
-                            StandardOpenOption.WRITE,
-                            StandardOpenOption.TRUNCATE_EXISTING
-                    );
-
                     return patchedBuffer;
                 }
             }
