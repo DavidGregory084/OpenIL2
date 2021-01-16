@@ -57,6 +57,8 @@ build_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: .\gradlew.bat :classload_agent:jar
   - cmd: .\gradlew.bat :classload_agent:nativeImage
+  # Restore 32-bit compiler environment
+  - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars32.bat"
 
   # Custom JRE with JMX debugging support
   #
