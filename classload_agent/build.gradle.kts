@@ -46,7 +46,6 @@ tasks.jar {
 }
 
 nativeImage {
-    resources
     graalVmHome = System.getenv("GRAALVM_HOME")
     mainClass = "com.maddox.instrument.SFSTransformer"
     executableName = "class-transformer"
