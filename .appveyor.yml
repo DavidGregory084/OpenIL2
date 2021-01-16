@@ -25,14 +25,6 @@ install:
   - cmd: rustup target add x86_64-pc-windows-msvc
 
 build_script:
-  # Class loading agent
-  #
-  # Set up C++ compiler environment for native-image
-  - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
-  - cmd: cd %APPVEYOR_BUILD_FOLDER%
-  - cmd: .\gradlew.bat :classload_agent:jar
-  - cmd: .\gradlew.bat :classload_agent:nativeImage
-
   # Launcher executable
   #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\launcher
@@ -57,6 +49,14 @@ build_script:
   - cmd: copy /y %APPVEYOR_BUILD_FOLDER%\physfs_jni\target\release\physfs_jni.dll %APPVEYOR_BUILD_FOLDER%\physfs_java
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: .\gradlew.bat :physfs_java:jar
+
+  # Class loading agent
+  #
+  # Set up C++ compiler environment for native-image
+  - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%
+  - cmd: .\gradlew.bat :classload_agent:jar
+  - cmd: .\gradlew.bat :classload_agent:nativeImage
 
   # Custom JRE with JMX debugging support
   #
