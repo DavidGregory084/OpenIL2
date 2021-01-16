@@ -28,7 +28,7 @@ build_script:
   # Class loading agent
   #
   # Set up C++ compiler environment for native-image
-  - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat"
+  - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: .\gradlew.bat :classload_agent:jar
   - cmd: .\gradlew.bat :classload_agent:nativeImage
