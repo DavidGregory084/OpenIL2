@@ -51,6 +51,9 @@ nativeImage {
     mainClass = "com.maddox.instrument.SFSTransformer"
     executableName = "class-transformer"
     outputDirectory = file("$buildDir/executable")
+    arguments(
+            "--no-fallback"
+    )
 }
 
 generateNativeImageConfig {

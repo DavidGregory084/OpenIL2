@@ -23,12 +23,12 @@ install:
   # Add 64-bit MSVC Rust toolchain for repacker
   - cmd: rustup toolchain install stable-x86_64-pc-windows-msvc
   - cmd: rustup target add x86_64-pc-windows-msvc
-  # Set up C++ compiler environment for native-image
-  - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat"
 
 build_script:
   # Class loading agent
   #
+  # Set up C++ compiler environment for native-image
+  - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat"
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: .\gradlew.bat :classload_agent:jar
   - cmd: .\gradlew.bat :classload_agent:nativeImage
