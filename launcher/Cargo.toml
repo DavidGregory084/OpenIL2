@@ -11,8 +11,10 @@ libloading = "0.6.5"
 jni = { version = "0.18.0", features = ["invocation"] }
 clap = "2.33"
 anyhow = "1"
+zip = "0.5.9"
 
 [build-dependencies]
+bindgen = "0.56.0"
 built = "0.4"
 
 [profile.release]

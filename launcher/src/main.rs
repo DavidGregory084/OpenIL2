@@ -1,29 +1,30 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![allow(non_upper_case_globals)]
+#![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use jni::errors::jni_error_code_to_result;
 use jni::objects::*;
 use jni::*;
 extern crate clap;
 extern crate libloading as lib;
 use clap::{App, Arg};
+use std::io::Read;
+use winapi::shared::minwindef::MAX_PATH;
+use winapi::um::processenv::GetCurrentDirectoryA;
+use winapi::um::winnt::CHAR;
+
+include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 pub mod build_info {
     include!(concat!(env!("OUT_DIR"), "/built.rs"));
 }
 
 fn get_system_classloader(env: JNIEnv<'_>) -> Result<JObject<'_>> {
-    let loader_class = env.find_class("java/lang/ClassLoader").with_context(|| {
-        if env.exception_check().unwrap() {
-            env.exception_describe().unwrap()
-        };
-        "Unable to find Java ClassLoader class"
-    })?;
-
     let loader_value = env
         .call_static_method(
-            loader_class,
+            "java/lang/ClassLoader",
             "getSystemClassLoader",
             "()Ljava/lang/ClassLoader;",
             &[],
@@ -43,9 +44,9 @@ fn get_system_classloader(env: JNIEnv<'_>) -> Result<JObject<'_>> {
 
 fn load_class<'a>(
     env: JNIEnv<'a>,
-    system_loader: JObject<'a>,
+    loader: JObject<'a>,
     class_name_str: &str,
-) -> Result<JObject<'a>> {
+) -> Result<JClass<'a>> {
     let class_name = env.new_string(class_name_str).with_context(|| {
         if env.exception_check().unwrap() {
             env.exception_describe().unwrap()
@@ -55,7 +56,7 @@ fn load_class<'a>(
 
     let class_value = env
         .call_method(
-            system_loader,
+            loader,
             "loadClass",
             "(Ljava/lang/String;Z)Ljava/lang/Class;",
             &[JValue::Object(*class_name), JValue::Bool(1)],
@@ -64,16 +65,65 @@ fn load_class<'a>(
             if env.exception_check().unwrap() {
                 env.exception_describe().unwrap()
             };
-            "Unable to load main class"
+            "Unable to load class"
         })?;
 
     match class_value {
-        JValue::Object(jobject) => Ok(jobject),
+        JValue::Object(jobject) => Ok(jobject.into()),
         _ => bail!("Unable to load main class"),
     }
 }
 
-fn mount_files_zip(env: JNIEnv<'_>) -> Result<()> {
+fn load_class_from_physfs_jar<'a>(
+    env: JNIEnv<'a>,
+    loader: JObject<'a>,
+    class_name: &str,
+) -> Result<JClass<'a>> {
+    let binary_name = class_name.to_string().replace(".", "/");
+    let physfs_jar = std::fs::File::open("physfs_java.jar")?;
+    let mut zip_archive = zip::ZipArchive::new(physfs_jar)?;
+    let zip_entry_name = format!("{}.class", binary_name);
+    let mut zip_entry = zip_archive
+        .by_name(&zip_entry_name)
+        .with_context(|| anyhow!("Couldn't find entry {} in the PhysFS JAR", zip_entry_name))?;
+    let mut class_data: Vec<u8> = Vec::new();
+    zip_entry.read_to_end(&mut class_data)?;
+    env.define_class(binary_name, loader, &class_data)
+        .with_context(|| {
+            if env.exception_check().unwrap() {
+                env.exception_describe().unwrap()
+            }
+            "Unable to load class from the PhysFS JAR"
+        })
+}
+
+fn load_class_from_zip<'a>(
+    env: JNIEnv<'a>,
+    loader: JObject<'a>,
+    class_name: &str,
+) -> Result<JClass<'a>> {
+    let binary_name = class_name.to_string().replace(".", "/");
+    let files_zip = std::fs::File::open("files.zip")?;
+    let mut zip_archive = zip::ZipArchive::new(files_zip)?;
+    let zip_entry_name = format!("{}.class", binary_name.to_ascii_uppercase());
+    let mut zip_entry = zip_archive.by_name(&zip_entry_name).with_context(|| {
+        anyhow!(
+            "Couldn't find entry {} in the zip file files.zip",
+            zip_entry_name
+        )
+    })?;
+    let mut class_data: Vec<u8> = Vec::new();
+    zip_entry.read_to_end(&mut class_data)?;
+    env.define_class(binary_name, loader, &class_data)
+        .with_context(|| {
+            if env.exception_check().unwrap() {
+                env.exception_describe().unwrap()
+            }
+            "Unable to load class from files.zip"
+        })
+}
+
+fn mount_files_zip(env: JNIEnv<'_>, physfs_class: JClass<'_>) -> Result<()> {
     let files_zip = env.new_string("files.zip").with_context(|| {
         if env.exception_check().unwrap() {
             env.exception_describe().unwrap()
@@ -82,7 +132,7 @@ fn mount_files_zip(env: JNIEnv<'_>) -> Result<()> {
     })?;
 
     env.call_static_method(
-        "com/maddox/rts/PhysFS",
+        physfs_class,
         "mountArchive",
         "(Ljava/lang/String;)V",
         &[JValue::Object(*files_zip)],
@@ -97,30 +147,49 @@ fn mount_files_zip(env: JNIEnv<'_>) -> Result<()> {
     Ok(())
 }
 
-fn create_physfs_loader<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JObject<'a>> {
-    env.new_object(
-        "com/maddox/rts/PhysFSLoader",
-        "(Ljava/lang/ClassLoader;)V", 
-        &[JValue::Object(system_loader)],
-    ) 
-    .with_context(|| {
-        if env.exception_check().unwrap() {
-            env.exception_describe().unwrap()
-        };
-        "Unable to create PhysFSLoader"
-    })
+fn create_object_instance<'a>(env: JNIEnv<'a>, class: JClass<'a>) -> Result<JObject<'a>> {
+    let object_value = env
+        .call_method(class, "newInstance", "()Ljava/lang/Object;", &[])
+        .with_context(|| {
+            if env.exception_check().unwrap() {
+                env.exception_describe().unwrap()
+            };
+            anyhow!("Unable to create new instance of {:?}", class)
+        })?;
+
+    match object_value {
+        JValue::Object(jobject) => Ok(jobject.into()),
+        _ => bail!("Unable to create new instance of {:?}", class),
+    }
 }
 
-fn call_main_method(env: JNIEnv<'_>) -> Result<()> {
-    let string_class = env.find_class("java/lang/String").with_context(|| {
-        if env.exception_check().unwrap() {
-            env.exception_describe().unwrap()
-        };
-        "Unable to find Java String class"
-    })?;
+fn call_loadnative_method(env: JNIEnv<'_>, inputstream_class: JClass<'_>) -> Result<()> {
+    env.call_static_method(inputstream_class, "_loadNative", "()V", &[])
+        .with_context(|| {
+            if env.exception_check().unwrap() {
+                env.exception_describe().unwrap()
+            };
+            "Unable to call _loadNative method"
+        })?;
 
+    Ok(())
+}
+
+fn call_preload_method(env: JNIEnv<'_>, physfs_loader: JObject<'_>) -> Result<()> {
+    env.call_method(physfs_loader, "preload", "()V", &[])
+        .with_context(|| {
+            if env.exception_check().unwrap() {
+                env.exception_describe().unwrap()
+            };
+            "Unable to preload game classes"
+        })?;
+
+    Ok(())
+}
+
+fn call_main_method(env: JNIEnv<'_>, main_class: JClass<'_>) -> Result<()> {
     let main_args = env
-        .new_object_array(0, string_class, JObject::null())
+        .new_object_array(0, "java/lang/String", JObject::null())
         .with_context(|| {
             if env.exception_check().unwrap() {
                 env.exception_describe().unwrap()
@@ -129,7 +198,7 @@ fn call_main_method(env: JNIEnv<'_>) -> Result<()> {
         })?;
 
     env.call_static_method(
-        "com/maddox/il2/game/GameWin3D",
+        main_class,
         "main",
         "([Ljava/lang/String;)V",
         &[JValue::Object(main_args.into())],
@@ -144,7 +213,48 @@ fn call_main_method(env: JNIEnv<'_>) -> Result<()> {
     Ok(())
 }
 
+struct PhysFS {}
+
+impl Drop for PhysFS {
+    fn drop(&mut self) {
+        unsafe {
+            if PHYSFS_isInit() > 0 {
+                if PHYSFS_deinit() == 0 {
+                    panic!("Unable to deinitialise PhysFS");
+                }
+            }
+        }
+    }
+}
+
+fn init_physfs() -> Result<PhysFS> {
+    unsafe {
+        if PHYSFS_init(std::ptr::null()) == 0 {
+            bail!("Unable to initialise PhysFS");
+        } else {
+            let mut vec = vec![0 as CHAR; MAX_PATH as usize];
+            let c_str = &mut vec[..];
+
+            if GetCurrentDirectoryA(MAX_PATH as u32, c_str.as_mut_ptr() as *mut CHAR) == 0 {
+                bail!("Unable to get current directory");
+            } else {
+                if PHYSFS_setWriteDir(c_str.as_mut_ptr() as *mut CHAR) == 0 {
+                    bail!("Unable to set current directory as PhysFS write directory");
+                } else {
+                    if PHYSFS_addToSearchPath(c_str.as_mut_ptr() as *mut CHAR, 0) == 0 {
+                        bail!("Unable to add current directory to PhysFS search path");
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(PhysFS {})
+}
+
 fn main() -> Result<()> {
+    let _physfs = init_physfs()?;
+
     let cli_args = App::new("OpenIL2")
         .version(build_info::PKG_VERSION)
         .author(build_info::PKG_AUTHORS)
@@ -167,7 +277,7 @@ fn main() -> Result<()> {
                 .takes_value(true)
                 .default_value_if("jmx-monitoring", None, "9010")
                 .value_name("port")
-                .help("The port to use for JMX monitoring"),
+                .help("The port to use for JMX monitoring, default 9010"),
         )
         .arg(
             Arg::with_name("await-debug")
@@ -181,7 +291,7 @@ fn main() -> Result<()> {
                 .takes_value(true)
                 .default_value_if("await-debug", None, "5005")
                 .value_name("port")
-                .help("The port to use for attaching a debugger"),
+                .help("The port to use for attaching a debugger, default 5005"),
         )
         .get_matches();
 
@@ -193,8 +303,8 @@ fn main() -> Result<()> {
         .option("-XX:+AlwaysPreTouch")
         .option("-XX:+DisableExplicitGC")
         .option("-XX:-UseBiasedLocking")
-        .option("-Xms1000m")
-        .option("-Xmx1000m");
+        .option("-Xms512m")
+        .option("-Xmx512m");
 
     if cli_args.is_present("transform-classes") {
         java_arg_bldr = java_arg_bldr.option("-javaagent:classload_agent.jar");
@@ -268,21 +378,41 @@ fn main() -> Result<()> {
 
     let system_loader = get_system_classloader(env)?;
 
-    load_class(env, system_loader, "com.maddox.rts.PhysFS")?;
+    let physfs_loader_class = load_class(env, system_loader, "com.maddox.rts.PhysFSLoader")?;
 
-    mount_files_zip(env)?;
+    let physfs_inputstream_class =
+        load_class_from_physfs_jar(env, system_loader, "com.maddox.rts.PhysFSInputStream")?;
 
-    load_class(env, system_loader, "com.maddox.rts.PhysFSLoader")?;
+    // Load physfs_jni.dll in the system loader
+    call_loadnative_method(env, physfs_inputstream_class)?;
 
-    let physfs_loader = create_physfs_loader(env, system_loader)?;
+    // Create PhysFS loader
+    let physfs_loader = create_object_instance(env, physfs_loader_class)?;
 
-    load_class(env, physfs_loader, "com.maddox.il2.game.GameWin3D")?;
+    let physfs_reader_class =
+        load_class_from_physfs_jar(env, physfs_loader, "com.maddox.rts.PhysFSReader")?;
 
-    call_main_method(env)?;
+    // Load physfs_rts.dll in the PhysFS loader
+    call_loadnative_method(env, physfs_reader_class)?;
 
-    if env.exception_check().unwrap() {
-        env.exception_describe().unwrap()
-    };
+    let physfs_class = load_class_from_physfs_jar(env, system_loader, "com.maddox.rts.PhysFS")?;
+
+    // Mount files.zip, ensuring all game classes are on PhysFS search path
+    mount_files_zip(env, physfs_class)?;
+
+    // Load DT.dll and rts.dll in the PhysFS loader
+    let sfs_inputstream_class =
+        load_class_from_zip(env, physfs_loader, "com.maddox.rts.SFSInputStream")?;
+
+    call_loadnative_method(env, sfs_inputstream_class)?;
+
+    // Preload game classes by loading com.maddox.il2.game.Main
+    call_preload_method(env, physfs_loader)?;
+
+    // Load the main class of the game
+    let main_class = load_class(env, physfs_loader, "com.maddox.il2.game.GameWin3D")?;
+
+    call_main_method(env, main_class)?;
 
     Ok(())
 }
