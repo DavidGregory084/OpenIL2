@@ -36,4 +36,12 @@ public class PhysFSReader extends InputStreamReader {
     public PhysFSReader(File var1, String var2, int[] var3) throws UnsupportedEncodingException {
         super(new PhysFSInputStream(var1), var2);
     }
+
+    public static void _loadNative() {
+        System.loadLibrary("physfs_rts");
+    }
+
+    static {
+        _loadNative();
+    }
 }

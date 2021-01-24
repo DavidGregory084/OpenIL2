@@ -4,9 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class PhysFSInputStream extends InputStream {
+
+    private static boolean libLoaded = false;
+
     private long fd;
     private final String fileName;
 
@@ -14,7 +21,13 @@ public class PhysFSInputStream extends InputStream {
         this.fd = openRead(file);
         this.fileName = file;
         if (this.fd == 0) {
-            throw new PhysFSException("while opening file " + file);
+            var exc = new PhysFSException("while opening file " + file);
+            var stackTrace = Thread.currentThread().getStackTrace();
+            var stackTraceElems = Arrays.stream(stackTrace);
+            if (stackTraceElems.noneMatch(elem -> "com.maddox.rts.ObjIO".equals(elem.getClassName()))) {
+                PhysFS.logMissing(file);
+            }
+            throw exc;
         }
     }
 
@@ -63,12 +76,11 @@ public class PhysFSInputStream extends InputStream {
     }
 
     public int read(byte[] buf, int offset, int len) {
-        if (offset < 0 || len < 0 || buf.length < len + offset) {
-            throw new IndexOutOfBoundsException();
-        } else if (len == 0) {
+        Objects.checkFromIndexSize(offset, len, buf.length);
+        if (len == 0) {
             return 0;
         } else if (this.fd != 0) {
-            int res =  readBytes(this.fd, buf, offset, len);
+            int res = readBytes(this.fd, buf, offset, len);
 
             if (res > 0) {
                 return res;
@@ -106,7 +118,9 @@ public class PhysFSInputStream extends InputStream {
         } else {
             return;
         }
-    };
+    }
+
+    ;
 
     private native int seek(long fileDescriptor, long pos);
 
@@ -156,17 +170,14 @@ public class PhysFSInputStream extends InputStream {
         }
     }
 
-    static void loadNative() {
-        System.loadLibrary("rts");
-        System.loadLibrary("DT");
-        System.loadLibrary("physfs_jni");
+    public static void _loadNative() {
+        if (!libLoaded) {
+            System.loadLibrary("physfs_jni");
+            libLoaded = true;
+        }
     }
 
     public static boolean dummyCheck() {
         return false;
-    }
-
-    static {
-        loadNative();
     }
 }
