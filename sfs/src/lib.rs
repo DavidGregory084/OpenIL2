@@ -318,14 +318,11 @@ pub fn unpack_from_sfs_by_fingerprint(
         })
         .context("Couldn't find a matching entry in the SFS file")?;
 
-    if toc_item.size == 0 {
-        bail!("The file is empty");
-    } else {
-        let start_offset = toc_item.offset as usize;
-        let end_offset = (toc_item.offset + toc_item.size) as usize;
-        let data = &decompressed[start_offset..end_offset];
-        Ok(data.to_vec())
-    }
+    let start_offset = toc_item.offset as usize;
+    let end_offset = (toc_item.offset + toc_item.size) as usize;
+    let data = &decompressed[start_offset..end_offset];
+
+    Ok(data.to_vec())
 }
 
 pub fn unpack_from_sfs_by_path(
