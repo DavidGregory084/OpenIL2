@@ -13,12 +13,11 @@ use jni::*;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::sync::RwLock;
-use winapi::shared::minwindef::{BOOL, DWORD, HINSTANCE, LPCVOID, LPVOID, MAX_PATH};
-use winapi::shared::ntdef::{FALSE, TRUE};
+use winapi::shared::minwindef::{BOOL, DWORD, HINSTANCE, LPCVOID, LPVOID};
+use winapi::shared::ntdef::TRUE;
 use winapi::um::fileapi::INVALID_SET_FILE_POINTER;
-use winapi::um::processenv::GetCurrentDirectoryA;
 use winapi::um::winbase::{FILE_BEGIN, FILE_CURRENT, FILE_END};
-use winapi::um::winnt::{BOOLEAN, CHAR, DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH, LONG, LPSTR};
+use winapi::um::winnt::{BOOLEAN, LONG, LPSTR};
 
 #[allow(unused_variables)]
 #[no_mangle]
@@ -101,16 +100,20 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_openRead(
     file_name: JString,
 ) -> jlong {
     let file_java_str = env.get_string(file_name).unwrap();
-    let file_str = file_java_str.to_str().unwrap().replace("\\", "/");
+
+    let file_str = file_java_str
+        .to_str()
+        .unwrap()
+        .replace("\\", "/")
+        .to_ascii_uppercase()
+        .replace(".CLASS", ".class");
+
     let file_c_str = CString::new(file_str.clone()).unwrap();
 
     if cfg!(debug_assertions) {
         printErr(
             env,
-            format!(
-                "PhysFSInputStream#openRead for file {}",
-                file_str
-            ),
+            format!("PhysFSInputStream#openRead for file {}", file_str),
         );
     }
 
@@ -337,6 +340,19 @@ extern "C" {
     fn RTS_GetCurrentRealTime() -> i64;
 }
 
+fn logMissing(file_name: &str) {
+    let jvm = JAVA_VM.read().unwrap();
+    let env = (*jvm).as_ref().unwrap().get_env().unwrap();
+    let jstring = env.new_string(file_name).unwrap();
+    env.call_static_method(
+        "com/maddox/rts/PhysFS",
+        "logMissing",
+        "(Ljava/lang/String;)V",
+        &[JValue::Object(*jstring)],
+    )
+    .unwrap();
+}
+
 fn printErr(env: JNIEnv, message: String) {
     let newline_string = format!("{}\n", message);
     let jstring = env.new_string(newline_string).unwrap();
@@ -363,7 +379,10 @@ fn cppErrPrint(message: String) {
 
 unsafe extern "system" fn open_file(orig_file_name: LPSTR, mask: u32) -> i32 {
     let orig_file_str = CStr::from_ptr(orig_file_name).to_str().unwrap();
-    let file_str = orig_file_str.replace("\\", "/");
+    let file_str = orig_file_str
+        .replace("\\", "/")
+        .to_ascii_uppercase()
+        .replace(".CLASS", ".class");
     let file_c_str = CString::new(file_str.clone()).unwrap();
 
     if cfg!(debug_assertions) {
@@ -412,6 +431,9 @@ unsafe extern "system" fn open_file(orig_file_name: LPSTR, mask: u32) -> i32 {
                 file_str, error, msg
             ));
         }
+
+        logMissing(orig_file_str);
+
         return -1;
     } else {
         if PHYSFS_seek(physfs_file, 0) == 0 {
@@ -616,34 +638,5 @@ pub extern "system" fn Java_com_maddox_rts_RTS_interf(env: JNIEnv, class: JClass
 #[allow(unused_variables)]
 #[no_mangle]
 extern "system" fn DllMain(dllHandle: HINSTANCE, reason: DWORD, reserved: LPVOID) -> BOOLEAN {
-    unsafe {
-        match reason {
-            DLL_PROCESS_ATTACH => {
-                if PHYSFS_init(std::ptr::null()) != 0 {
-                    let mut vec = vec![0 as CHAR; MAX_PATH as usize];
-                    let c_str = &mut vec[..];
-
-                    if GetCurrentDirectoryA(MAX_PATH as u32, c_str.as_mut_ptr() as *mut CHAR) > 0 {
-                        if PHYSFS_setWriteDir(c_str.as_mut_ptr() as *mut CHAR) != 0 {
-                            if PHYSFS_addToSearchPath(c_str.as_mut_ptr() as *mut CHAR, 0) != 0 {
-                                return TRUE;
-                            }
-                        }
-                    }
-                }
-
-                return FALSE;
-            }
-            DLL_PROCESS_DETACH => {
-                if PHYSFS_deinit() != 0 {
-                    return TRUE;
-                }
-
-                return FALSE;
-            }
-            _ => {
-                return TRUE;
-            }
-        }
-    }
+    return TRUE;
 }
