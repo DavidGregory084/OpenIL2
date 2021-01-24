@@ -73,16 +73,6 @@ fn load_class<'a>(
     }
 }
 
-fn load_physfs_class<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JObject<'a>> {
-    let physfs_class_str = "com.maddox.rts.PhysFS";
-    load_class(env, system_loader, physfs_class_str)
-}
-
-fn load_main_class<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JObject<'a>> {
-    let main_class_str = "com.maddox.il2.game.GameWin3D";
-    load_class(env, system_loader, main_class_str)
-}
-
 fn mount_files_zip(env: JNIEnv<'_>) -> Result<()> {
     let files_zip = env.new_string("files.zip").with_context(|| {
         if env.exception_check().unwrap() {
@@ -105,6 +95,20 @@ fn mount_files_zip(env: JNIEnv<'_>) -> Result<()> {
     })?;
 
     Ok(())
+}
+
+fn create_physfs_loader<'a>(env: JNIEnv<'a>, system_loader: JObject<'a>) -> Result<JObject<'a>> {
+    env.new_object(
+        "com/maddox/rts/PhysFSLoader",
+        "(Ljava/lang/ClassLoader;)V", 
+        &[JValue::Object(system_loader)],
+    ) 
+    .with_context(|| {
+        if env.exception_check().unwrap() {
+            env.exception_describe().unwrap()
+        };
+        "Unable to create PhysFSLoader"
+    })
 }
 
 fn call_main_method(env: JNIEnv<'_>) -> Result<()> {
@@ -270,17 +274,7 @@ fn main() -> Result<()> {
 
     load_class(env, system_loader, "com.maddox.rts.PhysFSLoader")?;
 
-    let physfs_loader = env.new_object(
-        "com/maddox/rts/PhysFSLoader",
-        "(Ljava/lang/ClassLoader;)V", 
-        &[JValue::Object(system_loader)],
-    ) 
-    .with_context(|| {
-        if env.exception_check().unwrap() {
-            env.exception_describe().unwrap()
-        };
-        "Unable to create PhysFSLoader"
-    })?;
+    let physfs_loader = create_physfs_loader(env, system_loader)?;
 
     load_class(env, physfs_loader, "com.maddox.il2.game.GameWin3D")?;
 

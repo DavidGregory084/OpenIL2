@@ -1,5 +1,8 @@
 package com.maddox.rts;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 public class PhysFSLoader extends ClassLoader {
 
     public PhysFSLoader(ClassLoader parent) {
@@ -11,14 +14,22 @@ public class PhysFSLoader extends ClassLoader {
         var filePath = name.replaceAll("\\.", "/");
         var fileName = String.format("%s.class", filePath);
         try (PhysFSInputStream classStream = new PhysFSInputStream(fileName)) {
+            var outputStream = new ByteArrayOutputStream();
             var buffer = new byte[classStream.available()];
-            var bytesRead = classStream.read(buffer);
-            if (bytesRead < 0) {
+
+            while (classStream.read(buffer) > 0) {
+                outputStream.write(buffer);
+                buffer = new byte[classStream.available()];
+            }
+
+            var classBytes = outputStream.toByteArray();
+
+            if (classBytes.length == 0) {
                 throw new ClassNotFoundException(name);
             } else {
-                return defineClass(name, buffer, 0, buffer.length);
+                return defineClass(name, classBytes, 0, classBytes.length);
             }
-        } catch (PhysFSException exc) {
+        } catch (PhysFSException | IOException exc) {
             throw new ClassNotFoundException(name, exc);
         }
     }
