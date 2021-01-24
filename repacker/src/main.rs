@@ -108,9 +108,11 @@ fn unpack_sfs(
 
         for sfs_entry in sfs_entries.enumerate() {
             if let (entry_idx, Ok(sfs_entry)) = sfs_entry {
-                let entry_name = sfs_entry.file_name.to_ascii_uppercase();
+                let entry_name = sfs_entry.file_name
+                    .to_ascii_uppercase()
+                    .replace(".CLASS", ".class");
 
-                if sfs_entry.file_size == 0 {
+                if sfs_entry.file_size == 0 && !entry_name.contains(".") {
                     zip.add_directory(&entry_name, zip_options)
                         .with_context(|| {
                             anyhow!(
