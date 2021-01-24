@@ -56,6 +56,11 @@ public class SFSTransformer implements ClassFileTransformer {
     static Map<String, String> rewriteMappings;
     static Remapper rewriteRemapper;
 
+    static Type FINGER_TYPE = Type.getType("Lcom/maddox/rts/Finger;");
+
+    static Type LDR_RES_TYPE = Type.getType("Lcom/maddox/rts/LDRres;");
+    static Type PHYSFS_LOADER_TYPE = Type.getType("Lcom/maddox/rts/PhysFSLoader;");
+
     static Type SFS_INPUT_STREAM_TYPE = Type.getType("Lcom/maddox/rts/SFSInputStream;");
     static Type PHYSFS_INPUT_STREAM_TYPE = Type.getType("Lcom/maddox/rts/PhysFSInputStream;");
 
@@ -82,6 +87,7 @@ public class SFSTransformer implements ClassFileTransformer {
     static Type SFS_UNMOUNT_DESCRIPTOR = Type.getMethodType(Type.VOID_TYPE, Type.getType(String.class));
 
     static Type SFS_FILECHECK_DESCRIPTOR = Type.getMethodType(Type.BOOLEAN_TYPE);
+    static Type SFS_LOADNATIVE_DESCRIPTOR = Type.getMethodType(Type.VOID_TYPE);
 
     static {
         skipTransformClasses = Set.of(
@@ -93,6 +99,7 @@ public class SFSTransformer implements ClassFileTransformer {
                 DUMMY_OUTPUT_FILTER_TYPE.getInternalName(),
 
                 // Don't transform classes that are rewrite targets
+                LDR_RES_TYPE.getInternalName(),
                 SFS_TYPE.getInternalName(),
                 SFS_READER_TYPE.getInternalName(),
                 SFS_EXCEPTION_TYPE.getInternalName(),
@@ -100,6 +107,8 @@ public class SFSTransformer implements ClassFileTransformer {
                 KRYPTO_INPUT_FILTER_TYPE.getInternalName(),
                 KRYPTO_OUTPUT_FILTER_TYPE.getInternalName(),
 
+                // Don't transform Finger to allow the call to SFSInputStream._loadNative to go through
+                FINGER_TYPE.getInternalName(),
                 // Don't transform FlightModelMain because it decrypts FMs using KryptoInputFilter
                 FLIGHT_MODEL_MAIN_TYPE.getInternalName()
         );
@@ -112,6 +121,8 @@ public class SFSTransformer implements ClassFileTransformer {
                 Map.entry(KRYPTO_INPUT_FILTER_TYPE.getInternalName(), DUMMY_INPUT_FILTER_TYPE.getInternalName()),
                 Map.entry(KRYPTO_OUTPUT_FILTER_TYPE.getInternalName(), DUMMY_OUTPUT_FILTER_TYPE.getInternalName()),
 
+                Map.entry(LDR_RES_TYPE.getInternalName(), PHYSFS_LOADER_TYPE.getInternalName()),
+
                 Map.entry(SFS_TYPE.getInternalName() + "." + "mount" + SFS_MOUNT_DESCRIPTOR1, "mountArchive"),
                 Map.entry(SFS_TYPE.getInternalName() + "." + "mount" + SFS_MOUNT_DESCRIPTOR2, "mountArchive"),
                 Map.entry(SFS_TYPE.getInternalName() + "." + "mountAs" + SFS_MOUNT_AS_DESCRIPTOR1, "mountArchiveAt"),
@@ -121,7 +132,9 @@ public class SFSTransformer implements ClassFileTransformer {
                 Map.entry(SFS_INPUT_STREAM_TYPE.getInternalName() + "." + "CheckComFiles" + SFS_FILECHECK_DESCRIPTOR, "dummyCheck"),
                 Map.entry(SFS_INPUT_STREAM_TYPE.getInternalName() + "." + "CheckClientExeFiles" + SFS_FILECHECK_DESCRIPTOR, "dummyCheck"),
                 Map.entry(SFS_INPUT_STREAM_TYPE.getInternalName() + "." + "StartClientDllFiles" + SFS_FILECHECK_DESCRIPTOR, "dummyCheck"),
-                Map.entry(SFS_INPUT_STREAM_TYPE.getInternalName() + "." + "StartClientSfsCheck" + SFS_FILECHECK_DESCRIPTOR, "dummyCheck")
+                Map.entry(SFS_INPUT_STREAM_TYPE.getInternalName() + "." + "StartClientSfsCheck" + SFS_FILECHECK_DESCRIPTOR, "dummyCheck"),
+
+                Map.entry(SFS_INPUT_STREAM_TYPE.getInternalName() + "." + "loadNative" + SFS_LOADNATIVE_DESCRIPTOR, "_loadNative")
         );
 
         rewriteRemapper = new SimpleRemapper(rewriteMappings);
@@ -186,8 +199,9 @@ public class SFSTransformer implements ClassFileTransformer {
             classFileBytes = Files.readAllBytes(Paths.get(args[0]));
         } else {
             var outputStream = new ByteArrayOutputStream();
-            while (System.in.read(buffer) > 0) {
-                outputStream.write(buffer);
+            var bytesRead = 0;
+            while ((bytesRead = System.in.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, bytesRead);
             }
             classFileBytes = outputStream.toByteArray();
         }
@@ -199,8 +213,9 @@ public class SFSTransformer implements ClassFileTransformer {
             Files.write(Paths.get(args[0]), transformedBytes, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
         } else {
             var inputStream = new ByteArrayInputStream(transformedBytes);
-            while (inputStream.read(buffer) > 0) {
-                System.out.write(buffer);
+            var bytesRead = 0;
+            while ((bytesRead = inputStream.read(buffer)) > 0) {
+                System.out.write(buffer, 0, bytesRead);
             }
         }
     }

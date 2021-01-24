@@ -51,7 +51,9 @@ nativeImage {
     executableName = "class-transformer"
     outputDirectory = file("$buildDir/executable")
     arguments(
-            "--no-fallback"
+            "--no-fallback",
+            "-H:IncludeResources='.*.patch\$'",
+            options.traceClassInitialization("com.maddox.instrument.SFSTransformer").get()
     )
 }
 
