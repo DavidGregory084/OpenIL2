@@ -23,6 +23,7 @@ WizardStyle=modern
 AppendDefaultDirName=no
 DirExistsWarning=no
 DisableDirPage=no
+LicenseFile=..\LICENSE
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
