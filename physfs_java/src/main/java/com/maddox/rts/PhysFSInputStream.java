@@ -1,14 +1,10 @@
 package com.maddox.rts;
 
 import java.io.File;
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class PhysFSInputStream extends InputStream {
 
@@ -17,21 +13,25 @@ public class PhysFSInputStream extends InputStream {
     private long fd;
     private final String fileName;
 
-    public PhysFSInputStream(String file) {
+    public PhysFSInputStream(String file) throws FileNotFoundException {
         this.fd = openRead(file);
         this.fileName = file;
         if (this.fd == 0) {
             var exc = new PhysFSException("while opening file " + file);
-            var stackTrace = Thread.currentThread().getStackTrace();
-            var stackTraceElems = Arrays.stream(stackTrace);
-            if (stackTraceElems.noneMatch(elem -> "com.maddox.rts.ObjIO".equals(elem.getClassName()))) {
-                PhysFS.logMissing(file);
+            if (exc.getCode() == PhysFS.ERR_NOT_FOUND) {
+                var stackTrace = Thread.currentThread().getStackTrace();
+                var stackTraceElems = Arrays.stream(stackTrace);
+                if (stackTraceElems.noneMatch(elem -> "com.maddox.rts.ObjIO".equals(elem.getClassName()))) {
+                    PhysFS.logMissing(file);
+                }
+                throw new FileNotFoundException(exc.getMessage());
+            } else {
+                throw exc;
             }
-            throw exc;
         }
     }
 
-    public PhysFSInputStream(File file) {
+    public PhysFSInputStream(File file) throws FileNotFoundException {
         this(file.getPath());
     }
 

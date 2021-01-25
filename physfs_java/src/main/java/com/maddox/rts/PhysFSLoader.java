@@ -1,10 +1,8 @@
 package com.maddox.rts;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Enumeration;
 
 public class PhysFSLoader extends ClassLoader {
     private static PhysFSLoader loader = new PhysFSLoader();
@@ -57,7 +55,7 @@ public class PhysFSLoader extends ClassLoader {
             } else {
                 throw new ClassNotFoundException(name);
             }
-        } catch (PhysFSException exc) {
+        } catch (Exception exc) {
             throw new ClassNotFoundException(name, exc);
         }
     }

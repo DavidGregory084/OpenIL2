@@ -95,7 +95,7 @@ class PhysFSTests {
     @Test
     void inputStreamOpenUnmountedFile() {
         assertThrows(
-                PhysFSException.class,
+                FileNotFoundException.class,
                 () -> new PhysFSInputStream("test2.ini"),
                 "Attempting to open a file from an unmounted archive didn't throw an exception");
     }
@@ -112,7 +112,7 @@ class PhysFSTests {
     }
 
     @Test
-    void inputStreamSeek() {
+    void inputStreamSeek() throws FileNotFoundException {
         long expectedPosition = -1;
         long actualPosition = -1;
 
@@ -127,7 +127,7 @@ class PhysFSTests {
     }
 
     @Test
-    void inputStreamSeekEof() {
+    void inputStreamSeekEof() throws FileNotFoundException {
         long seekPosition = -1;
         long fileLength = 0;
 
@@ -141,7 +141,7 @@ class PhysFSTests {
     }
 
     @Test
-    void inputStreamSeekAfterEof() {
+    void inputStreamSeekAfterEof() throws FileNotFoundException {
         try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
             assertThrows(
                     PhysFSException.class,
@@ -151,7 +151,7 @@ class PhysFSTests {
     }
 
     @Test
-    void inputStreamEndOfFile() {
+    void inputStreamEndOfFile() throws FileNotFoundException {
         try (PhysFSInputStream is = new PhysFSInputStream("test.ini")) {
             is.seek(is.fileLength());
             assertTrue(is.endOfFile(), "End of file condition was not set when seeking to end of file");

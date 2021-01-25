@@ -23,7 +23,7 @@ public class PhysFSURLConnection extends URLConnection {
         if (len > Integer.MAX_VALUE)
             return -1;
         else
-            return (int)len;
+            return (int) len;
     }
 
     @Override
