@@ -32,6 +32,8 @@ Source: "..\repacker\target\release\repacker.exe"; DestDir: "{app}"; Flags: igno
 Source: "..\repacker\target\release\repacker.pdb"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_jni\target\release\physfs_jni.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_jni\target\release\deps\physfs_jni.pdb"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\physfs_rts\target\release\physfs_rts.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\physfs_rts\target\release\deps\physfs_rts.pdb"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_java\physfs.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_java\rts.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_java\build\libs\physfs_java.jar"; DestDir: "{app}"; Flags: ignoreversion
@@ -41,7 +43,7 @@ Source: "..\classload_agent\build\executable\class-transformer.pdb"; DestDir: "{
 Source: "..\jre_debug\*.*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Source: "..\sfs_db.sqlite"; DestDir: "{app}"; Flags: ignoreversion
 ; fb_3do10.SFS - No identified entries as yet so we need to provide a dummy .zip with at least one entry
-Source: "fb_3do10p.zip": DestDir: "{app}"; Flags: ignoreversion
+Source: "fb_3do10p.zip"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Redist\MSVC\v142\vcredist_x64.exe"; DestDir: {tmp}; Flags: deleteafterinstall
 
 [Run]

@@ -1,5 +1,5 @@
 [package]
-name = "physfs_jni"
+name = "physfs_rts"
 version = "0.1.0"
 authors = ["David Gregory <davidgregory084@gmail.com>"]
 edition = "2018"
@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 libc = "0.2.80"
 winapi = "0.3.9"
 jni = "0.18"
+lazy_static = "1.4.0"
 
 [build-dependencies]
 bindgen = "0.56.0"

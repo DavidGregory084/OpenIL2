@@ -37,6 +37,12 @@ build_script:
   - cmd: cargo build
   - cmd: cargo build --release
 
+  # PhysFS RTS DLL
+  #
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_rts
+  - cmd: cargo build
+  - cmd: cargo build --release
+
   # SFS repacker
   #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\repacker
@@ -87,6 +93,16 @@ test_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_jni
   - cmd: cargo test
 
+  # PhysFS RTS DLL
+  #
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_rts
+  - cmd: cargo test
+
+  # SFS repacker
+  #
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\repacker
+  - cmd: cargo test
+
   # Java PhysFS library
   #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
@@ -119,6 +135,11 @@ artifacts:
     name: PhysFS JNI DLL
   - path: physfs_jni\target\debug\physfs_jni.dll
     name: PhysFS JNI DLL (Debug Build)
+
+  - path: physfs_rts\target\release\physfs_rts.dll
+    name: PhysFS RTS DLL
+  - path: physfs_rts\target\debug\physfs_rts.dll
+    name: PhysFS RTS DLL (Debug Build)
 
   - path: physfs_java\build\libs\physfs_java.jar
     name: PhysFS Java JAR
