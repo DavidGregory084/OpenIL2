@@ -1,6 +1,11 @@
 #define MyAppName "OpenIL2"
 #define MyAppVersion GetEnv('RELEASE_VERSION')
 #define MyAppExeName "openil2.exe"
+#if GetEnv('VCINSTALLDIR') != ""
+#define VisualCppDir GetEnv('VCINSTALLDIR')
+#else
+#define VisualCppDir "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\"
+#endif
 
 [Setup]
 AppId={{39EF55F9-0664-43CC-A3A2-7780264F1184}
@@ -47,7 +52,7 @@ Source: "..\jre\*.*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Source: "..\sfs_db.sqlite"; DestDir: "{app}"; Flags: ignoreversion
 ; fb_3do10.SFS - No identified entries as yet so we need to provide a dummy .zip with at least one entry
 Source: "fb_3do10p.zip"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Redist\MSVC\v142\vcredist_x64.exe"; DestDir: {tmp}; Flags: deleteafterinstall
+Source: "{#VisualCppDir}Redist\MSVC\v142\vcredist_x64.exe"; DestDir: {tmp}; Flags: deleteafterinstall
 
 [Run]
 Filename: "{tmp}\vcredist_x64.exe"; Parameters: "/install /quiet /norestart"; StatusMsg: "Installing Visual C++ 2019 Redistributable"

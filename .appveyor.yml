@@ -100,11 +100,6 @@ test_script:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%\physfs_rts
   - cmd: cargo test
 
-  # SFS repacker
-  #
-  - cmd: cd %APPVEYOR_BUILD_FOLDER%\repacker
-  - cmd: cargo test
-
   # Java PhysFS library
   #
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
