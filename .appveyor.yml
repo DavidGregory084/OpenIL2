@@ -23,6 +23,8 @@ install:
   # Add 64-bit MSVC Rust toolchain for repacker
   - cmd: rustup toolchain install stable-x86_64-pc-windows-msvc
   - cmd: rustup target add x86_64-pc-windows-msvc
+  # Set release version
+  - ps: Set-Item -Path env:RELEASE_VERSION -Value $(git describe --tags)
 
 build_script:
   # Launcher executable

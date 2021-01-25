@@ -1,5 +1,5 @@
 #define MyAppName "OpenIL2 (Debug Build)"
-#define MyAppVersion "0.1.0"
+#define MyAppVersion GetEnv('RELEASE_VERSION')
 #define MyAppExeName "openil2.exe"
 
 [Setup]
@@ -14,6 +14,9 @@ OutputBaseFilename=openil2-installer-debug
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+AppendDefaultDirName=no
+DirExistsWarning=no
+DisableDirPage=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
