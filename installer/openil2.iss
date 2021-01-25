@@ -40,8 +40,12 @@ Source: "..\classload_agent\build\executable\class-transformer.exe"; DestDir: "{
 Source: "..\classload_agent\build\executable\class-transformer.pdb"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\jre\*.*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Source: "..\sfs_db.sqlite"; DestDir: "{app}"; Flags: ignoreversion
+; fb_3do10.SFS - No identified entries as yet so we need to provide a dummy .zip with at least one entry
+Source: "fb_3do10p.zip": DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Redist\MSVC\v142\vcredist_x64.exe"; DestDir: {tmp}; Flags: deleteafterinstall
 
 [Run]
+Filename: "{tmp}\vcredist_x64.exe"; Parameters: "/install /quiet /norestart"; StatusMsg: "Installing Visual C++ 2019 Redistributable"
 Filename: "{app}\repacker.exe"; Parameters: """{app}"" ""{tmp}"" fb_3do.SFS"; StatusMsg: "Repacking fb_3do.SFS"; AfterInstall: UpdateProgress(51)
 Filename: "{app}\repacker.exe"; Parameters: """{app}"" ""{tmp}"" fb_3do01.SFS"; StatusMsg: "Repacking fb_3do01.SFS"; AfterInstall: UpdateProgress(56)
 Filename: "{app}\repacker.exe"; Parameters: """{app}"" ""{tmp}"" fb_3do02.SFS"; StatusMsg: "Repacking fb_3do02.SFS"
@@ -52,7 +56,7 @@ Filename: "{app}\repacker.exe"; Parameters: """{app}"" ""{tmp}"" fb_3do06.SFS"; 
 Filename: "{app}\repacker.exe"; Parameters: """{app}"" ""{tmp}"" fb_3do07.SFS"; StatusMsg: "Repacking fb_3do07.SFS"; AfterInstall: UpdateProgress(60)
 Filename: "{app}\repacker.exe"; Parameters: """{app}"" ""{tmp}"" fb_3do08.SFS"; StatusMsg: "Repacking fb_3do08.SFS"
 Filename: "{app}\repacker.exe"; Parameters: """{app}"" ""{tmp}"" fb_3do08p.SFS"; StatusMsg: "Repacking fb_3do08p.SFS"; AfterInstall: UpdateProgress(66)
-; fb_3do10.SFS - No identified entries as yet
+; fb_3do10.SFS - No identified entries as yet so we can't repack it
 ; Filename: "{app}\repacker.exe";; Parameters: """{app}"" ""{tmp}"" fb_3do10.SFS"; StatusMsg: "Repacking fb_3do10.SFS"
 Filename: "{app}\repacker.exe"; Parameters: """{app}"" ""{tmp}"" fb_3do11.SFS"; StatusMsg: "Repacking fb_3do11.SFS"
 Filename: "{app}\repacker.exe"; Parameters: """{app}"" ""{tmp}"" fb_3do11p.SFS"; StatusMsg: "Repacking fb_3do11p.SFS"; AfterInstall: UpdateProgress(67)
