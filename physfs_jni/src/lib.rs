@@ -174,21 +174,56 @@ pub extern "system" fn Java_com_maddox_rts_PhysFSInputStream_close(
 
 #[allow(unused_variables)]
 #[no_mangle]
+pub extern "system" fn Java_com_maddox_rts_PhysFS_init(
+    env: JNIEnv,
+    class: JClass,
+) -> jint {
+    if cfg!(debug_assertions) {
+        printErr(env, "PhysFS.init".to_string());
+    }
+
+    unsafe { PHYSFS_init(std::ptr::null()) }
+}
+
+#[allow(unused_variables)]
+#[no_mangle]
+pub extern "system" fn Java_com_maddox_rts_PhysFS_deinit(
+    env: JNIEnv,
+    class: JClass,
+) -> jint {
+    if cfg!(debug_assertions) {
+        printErr(env, "PhysFS.deinit".to_string());
+    }
+
+    unsafe { PHYSFS_deinit() }
+}
+
+#[allow(unused_variables)]
+#[no_mangle]
 pub extern "system" fn Java_com_maddox_rts_PhysFS_exists(
     env: JNIEnv,
     class: JClass,
     file_name: JString,
 ) -> jint {
-    let file_str = env.get_string(file_name).unwrap();
+    let file_java_str = env.get_string(file_name).unwrap();
+
+    let file_str = file_java_str
+        .to_str()
+        .unwrap()
+        .replace("\\", "/")
+        .to_ascii_uppercase()
+        .replace(".CLASS", ".class");
+
+    let file_c_str = CString::new(file_str.clone()).unwrap();
 
     if cfg!(debug_assertions) {
         printErr(
             env,
-            format!("PhysFS.exists for file {}", file_str.to_str().unwrap()),
+            format!("PhysFS.exists for file {}", file_str),
         );
     }
 
-    unsafe { PHYSFS_exists(file_str.as_ptr()) }
+    unsafe { PHYSFS_exists(file_c_str.as_ptr()) }
 }
 
 #[allow(unused_variables)]
@@ -225,7 +260,10 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_mountAt(
     append: jint,
 ) -> jint {
     let file_str = env.get_string(file_name).unwrap();
-    let mount_point_str = env.get_string(mount_point).unwrap();
+
+    let mount_point_java_str = env.get_string(mount_point).unwrap();
+    let mount_point_str = mount_point_java_str.to_str().unwrap().to_ascii_uppercase();
+    let mount_point_c_str = CString::new(mount_point_str.clone()).unwrap();
 
     if cfg!(debug_assertions) {
         printErr(
@@ -233,13 +271,13 @@ pub extern "system" fn Java_com_maddox_rts_PhysFS_mountAt(
             format!(
                 "PhysFS.mountAt for file {} mount_point {} append {}",
                 file_str.to_str().unwrap(),
-                mount_point_str.to_str().unwrap(),
+                mount_point_str,
                 append
             ),
         );
     }
 
-    unsafe { PHYSFS_mount(file_str.as_ptr(), mount_point_str.as_ptr(), append) }
+    unsafe { PHYSFS_mount(file_str.as_ptr(), mount_point_c_str.as_ptr(), append) }
 }
 
 #[allow(unused_variables)]

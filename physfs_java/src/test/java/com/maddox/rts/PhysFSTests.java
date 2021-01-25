@@ -1,8 +1,6 @@
 package com.maddox.rts;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -11,9 +9,17 @@ import java.nio.file.Paths;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PhysFSTests {
-    private Path testFilesPath = Paths.get("test-data").resolve("test-files.sfs");
-    private Path testFiles2Path = Paths.get("test-data").resolve("test-files2.sfs");
-    private Path nonExistentPath = Paths.get("test-data").resolve("test-files-missing.sfs");
+    private Path testFilesPath = Paths.get("test-data").resolve("test-files.zip");
+    private Path testFiles2Path = Paths.get("test-data").resolve("test-files2.zip");
+    private Path testFilesSfsPath = Paths.get("test-data").resolve("test-files2.sfs");
+    private Path nonExistentPath = Paths.get("test-data").resolve("test-files-missing.zip");
+
+    @BeforeAll
+    static void beforeAll() {
+        PhysFSInputStream._loadNative();
+        PhysFS.init();
+        PhysFS.mountArchive(Paths.get(".").toString());
+    }
 
     @BeforeEach
     void beforeEach() {
@@ -23,6 +29,11 @@ class PhysFSTests {
     @AfterEach
     void afterEach() {
         PhysFS.unmountArchive(testFilesPath.toString());
+    }
+
+    @AfterAll
+    static void afterAll() {
+        PhysFS.deinit();
     }
 
     @Test
@@ -68,6 +79,16 @@ class PhysFSTests {
             assertTrue(PhysFS.existsFile("data/test2.ini"), "A file did not show as existing after its archive was mounted at a mountpoint");
         } finally {
             PhysFS.unmountArchive(testFiles2Path.toString());
+        }
+    }
+
+    @Test
+    void redirectsSfsMountToZip() {
+        try {
+            PhysFS.mountArchive(testFilesSfsPath.toString());
+            assertTrue(PhysFS.existsFile("test2.ini"), "A file did not show as existing after its archive was mounted");
+        } finally {
+            PhysFS.unmountArchive(testFilesSfsPath.toString());
         }
     }
 

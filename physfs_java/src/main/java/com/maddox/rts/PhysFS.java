@@ -39,6 +39,10 @@ public class PhysFS {
     public static final int ERR_BAD_PASSWORD = 28;
     public static final int ERR_APP_CALLBACK = 29;
 
+    static native int init();
+
+    static native int deinit();
+
     public static native int getLastErrorCode();
 
     public static void mountArchive(String file) {
@@ -50,7 +54,7 @@ public class PhysFS {
     }
 
     public static void mountArchive(String file, int appendToSearchPath) {
-        var zipFile = file.replaceAll("(?i)sfs", "zip");
+        var zipFile = file.replaceAll("(?i)\\.sfs$", ".zip");
         int res = mount(zipFile, appendToSearchPath);
         if (res == 0) {
             throw new PhysFSException("while mounting file " + zipFile);
@@ -68,7 +72,7 @@ public class PhysFS {
     }
 
     public static void mountArchiveAt(String file, String mountPoint, int appendToSearchPath) {
-        var zipFile = file.replaceAll("(?i)sfs", "zip");
+        var zipFile = file.replaceAll("(?i)\\.sfs$", ".zip");
         int res = mountAt(zipFile, mountPoint, appendToSearchPath);
         if (res == 0) {
             throw new PhysFSException("while mounting file " + zipFile + " at mount point " + mountPoint);
@@ -84,9 +88,10 @@ public class PhysFS {
     private static native int exists(String file);
 
     public static void unmountArchive(String file) {
-        int res = unmount(file);
+        var zipFile = file.replaceAll("(?i)\\.sfs$", ".zip");
+        int res = unmount(zipFile);
         if (res == 0) {
-            throw new PhysFSException("while unmounting file " + file);
+            throw new PhysFSException("while unmounting file " + zipFile);
         }
     }
 
