@@ -1,7 +1,6 @@
 #define MyAppName "OpenIL2 (Debug Build)"
 #define MyAppVersion GetEnv('RELEASE_VERSION')
 #define MyAppExeName "openil2.exe"
-#define VisualCppDir GetEnv('VCINSTALLDIR')
 #if GetEnv('VCINSTALLDIR') != ""
 #define VisualCppDir GetEnv('VCINSTALLDIR')
 #else
@@ -29,12 +28,15 @@ LicenseFile=..\LICENSE
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; Flags: unchecked
 Name: "repacksfs"; Description: "Repack SFS files"; Flags: checkedonce
 
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\bin"
 Type: filesandordirs; Name: "{app}\lib"
+
+[Dirs]
+Name: "{app}\mods"; Flags: uninsneveruninstall
 
 [Files]
 Source: "..\launcher\target\debug\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
@@ -55,6 +57,7 @@ Source: "..\jre_debug\*.*"; DestDir: "{app}"; Flags: ignoreversion recursesubdir
 Source: "..\sfs_db.sqlite"; DestDir: "{app}"; Flags: ignoreversion
 ; fb_3do10.SFS - No identified entries as yet so we need to provide a dummy .zip with at least one entry
 Source: "fb_3do10p.zip"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".modload"; DestDir: "{app}"; Flags: onlyifdoesntexist
 Source: "{#VisualCppDir}Redist\MSVC\v142\vcredist_x64.exe"; DestDir: {tmp}; Flags: deleteafterinstall
 
 [Run]

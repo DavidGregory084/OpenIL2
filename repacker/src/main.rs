@@ -108,7 +108,8 @@ fn unpack_sfs(
 
         for sfs_entry in sfs_entries.enumerate() {
             if let (entry_idx, Ok(sfs_entry)) = sfs_entry {
-                let entry_name = sfs_entry.file_name
+                let entry_name = sfs_entry
+                    .file_name
                     .to_ascii_uppercase()
                     .replace(".CLASS", ".class");
 
@@ -181,12 +182,21 @@ fn unpack_sfs(
                                 zip_file_path.display()
                             )
                         })?;
+
+                    // Evaluate the .modload file in the .rc file used on game startup
+                    if entry_name == ".RC" {
+                        zip.write(b"@file .modload\n\n")
+                            .context("Unable to append .modload entry to .rc file")?;
+                    }
                 }
             }
         }
 
         zip.flush().with_context(|| {
-            anyhow!("Unable to zip content to file {}", zip_file_path.display())
+            anyhow!(
+                "Unable to flush zip content to file {}",
+                zip_file_path.display()
+            )
         })?;
 
         zip.finish()

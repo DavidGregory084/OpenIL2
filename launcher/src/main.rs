@@ -147,19 +147,24 @@ fn mount_files_zip(env: JNIEnv<'_>, physfs_class: JClass<'_>) -> Result<()> {
     Ok(())
 }
 
-fn create_object_instance<'a>(env: JNIEnv<'a>, class: JClass<'a>) -> Result<JObject<'a>> {
-    let object_value = env
-        .call_method(class, "newInstance", "()Ljava/lang/Object;", &[])
+fn call_loader_method<'a>(env: JNIEnv<'a>, physfs_loader_class: JClass<'_>) -> Result<JObject<'a>> {
+    let return_value = env
+        .call_static_method(
+            physfs_loader_class,
+            "loader",
+            "()Ljava/lang/ClassLoader;",
+            &[],
+        )
         .with_context(|| {
             if env.exception_check().unwrap() {
                 env.exception_describe().unwrap()
             };
-            anyhow!("Unable to create new instance of {:?}", class)
+            "Unable to call PhysFSLoader.loader method"
         })?;
 
-    match object_value {
-        JValue::Object(jobject) => Ok(jobject.into()),
-        _ => bail!("Unable to create new instance of {:?}", class),
+    match return_value {
+        JValue::Object(jobject) => Ok(jobject),
+        _ => bail!("Unable to call PhysFSLoader.loader method"),
     }
 }
 
@@ -260,12 +265,6 @@ fn main() -> Result<()> {
         .author(build_info::PKG_AUTHORS)
         .about("A modernised launcher for IL-2 Sturmovik 1946")
         .arg(
-            Arg::with_name("transform-classes")
-                .long("transform-classes")
-                .short("t")
-                .help("Transforms and dumps the game classes as they are loaded"),
-        )
-        .arg(
             Arg::with_name("jmx-monitoring")
                 .long("jmx-monitoring")
                 .short("j")
@@ -293,22 +292,33 @@ fn main() -> Result<()> {
                 .value_name("port")
                 .help("The port to use for attaching a debugger, default 5005"),
         )
+        .arg(
+            Arg::with_name("heap-size")
+                .long("heap-size")
+                .takes_value(true)
+                .value_name("size")
+                .help("The heap size to use in the format supported by the JVM -Xms / -Xmx options, default 512m")
+        )
+        .arg(
+            Arg::with_name("gc-logging")
+                .long("gc-logging")
+                .help("Log GC events to file gc.log in the game directory"),
+        )
         .get_matches();
 
     let mut java_arg_bldr = InitArgsBuilder::new()
         .version(JNIVersion::V8)
-        .option("-Djava.class.path=.;physfs_java.jar")
+        .option("-Djava.class.path=.;physfs_java.jar;mods;mods/*")
         .option("-Djava.locale.providers=COMPAT")
         .option("-XX:+UseShenandoahGC")
         .option("-XX:+AlwaysPreTouch")
         .option("-XX:+DisableExplicitGC")
-        .option("-XX:-UseBiasedLocking")
-        .option("-Xms512m")
-        .option("-Xmx512m");
+        .option("-XX:-UseBiasedLocking");
 
-    if cli_args.is_present("transform-classes") {
-        java_arg_bldr = java_arg_bldr.option("-javaagent:classload_agent.jar");
-    }
+    let heap_size = cli_args.value_of("heap-size").unwrap_or("512m");
+    java_arg_bldr = java_arg_bldr
+        .option(&format!("-Xms{}", heap_size))
+        .option(&format!("-Xmx{}", heap_size));
 
     if cli_args.is_present("await-debug") {
         let debug_port = cli_args.value_of("debug-port").unwrap();
@@ -329,6 +339,11 @@ fn main() -> Result<()> {
             ))
             .option("-Dcom.sun.management.jmxremote.authenticate=false")
             .option("-Dcom.sun.management.jmxremote.ssl=false");
+    }
+
+    if cli_args.is_present("gc-logging") {
+        java_arg_bldr =
+            java_arg_bldr.option("-Xlog:gc*,age*=debug:file=gc.log::filecount=1,filesize=5M");
     }
 
     let java_args = java_arg_bldr
@@ -387,7 +402,7 @@ fn main() -> Result<()> {
     call_loadnative_method(env, physfs_inputstream_class)?;
 
     // Create PhysFS loader
-    let physfs_loader = create_object_instance(env, physfs_loader_class)?;
+    let physfs_loader = call_loader_method(env, physfs_loader_class)?;
 
     let physfs_reader_class =
         load_class_from_physfs_jar(env, physfs_loader, "com.maddox.rts.PhysFSReader")?;
