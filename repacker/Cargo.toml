@@ -3,6 +3,7 @@ name = "repacker"
 version = "0.1.0"
 authors = ["David Gregory <davidgregory084@gmail.com>"]
 edition = "2018"
+license = "BSD-2-Clause-Patent"
 
 [dependencies]
 sfs = { path = '../sfs' }

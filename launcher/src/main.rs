@@ -261,9 +261,8 @@ fn main() -> Result<()> {
     let _physfs = init_physfs()?;
 
     let cli_args = App::new("OpenIL2")
-        .version(build_info::PKG_VERSION)
-        .author(build_info::PKG_AUTHORS)
-        .about("A modernised launcher for IL-2 Sturmovik 1946")
+        .version(env!("VERGEN_SEMVER_LIGHTWEIGHT"))
+        .about(build_info::PKG_DESCRIPTION)
         .arg(
             Arg::with_name("jmx-monitoring")
                 .long("jmx-monitoring")

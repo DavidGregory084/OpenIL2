@@ -3,6 +3,8 @@ name = "openil2"
 version = "0.1.0"
 authors = ["David Gregory <davidgregory084@gmail.com>"]
 edition = "2018"
+description = "A modernised launcher for IL-2 Sturmovik 1946"
+license = "BSD-2-Clause-Patent"
 
 [dependencies]
 libc = "0.2.80"
@@ -16,6 +18,7 @@ zip = "0.5.9"
 [build-dependencies]
 bindgen = "0.56.0"
 built = "0.4"
+vergen = "3"
 
 [profile.release]
 opt-level = 1

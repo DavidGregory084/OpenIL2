@@ -6,6 +6,9 @@ use std::path::PathBuf;
 fn main() {
     built::write_built_file().expect("Failed to acquire build-time information");
 
+    let flags = vergen::ConstantsFlags::all();
+    vergen::generate_cargo_keys(flags).unwrap();
+
     println!("cargo:rustc-link-search=native=lib");
     println!("cargo:rustc-link-lib=static=physfs");
     println!("cargo:rustc-link-lib=dylib=rts");
