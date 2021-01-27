@@ -39,7 +39,7 @@ Type: filesandordirs; Name: "{app}\lib"
 Name: "{app}\mods"; Flags: uninsneveruninstall
 
 [Files]
-Source: "..\launcher\target\debug\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\launcher\target\debug\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion; BeforeInstall: SetProgressMax(2)
 Source: "..\launcher\target\debug\openil2.pdb"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\repacker\target\release\repacker.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\repacker\target\release\repacker.pdb"; DestDir: "{app}"; Flags: ignoreversion
@@ -50,7 +50,6 @@ Source: "..\physfs_rts\target\release\deps\physfs_rts.pdb"; DestDir: "{app}"; Fl
 Source: "..\physfs_java\physfs.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_java\rts.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_java\build\libs\physfs_java.jar"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\classload_agent\build\libs\classload_agent.jar"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\classload_agent\build\executable\class-transformer.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\classload_agent\build\executable\class-transformer.pdb"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\jre_debug\*.*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
@@ -137,7 +136,8 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 procedure SetProgressMax(Ratio: Integer);
 begin
-  WizardForm.ProgressGauge.Max := WizardForm.ProgressGauge.Max * Ratio;
+  if WizardIsTaskSelected('repacksfs') then
+    WizardForm.ProgressGauge.Max := WizardForm.ProgressGauge.Max * Ratio;
 end;
 
 procedure UpdateProgress(Position: Integer);
