@@ -151,6 +151,20 @@ artifacts:
   - path: classload_agent\build\executable\class-transformer.exe
     name: Class Transformer
 
+deploy:
+  - provider: BinTray
+    username: davidgregory084
+    api_key:
+      secure: JKdWcEbXrEM9DuQfYeWkfYchP/Ybo1IKkCaJssc9bxYvroer3bGHfXLU2vK68Edi
+    subject: openil2
+    repo: OpenIL2
+    package: OpenIL2
+    version: $(RELEASE_VERSION)
+    publish: true
+    artifact: /openil2-installer.*\.exe/
+    on:
+      APPVEYOR_REPO_TAG: true
+
 cache:
   - '%USERPROFILE%\.cargo'
   - '%USERPROFILE%\.gradle\caches'
