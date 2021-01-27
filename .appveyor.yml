@@ -161,7 +161,7 @@ deploy:
     package: OpenIL2
     version: $(RELEASE_VERSION)
     publish: true
-    artifact: /openil2-installer.*\.exe/
+    artifact: /.*openil2-installer.*\.exe/
     on:
       APPVEYOR_REPO_TAG: true
 
