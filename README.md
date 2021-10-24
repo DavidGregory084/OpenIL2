@@ -1,4 +1,9 @@
 # OpenIL2
+
+[![Build status](https://ci.appveyor.com/api/projects/status/6e8s7mp6oq80p46k/branch/main?svg=true)](https://ci.appveyor.com/project/dgregory084/openil2/branch/main)
+![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/DavidGregory084/OpenIL2?include_prereleases&sort=semver)
+[![License](https://img.shields.io/badge/license-BSD%2BPatent-blue)](https://spdx.org/licenses/BSD-2-Clause-Patent.html)
+
 *OpenIL2* is an unofficial, modernised launcher for the 2006 combat flight simulation game [IL-2 Sturmovik 1946](https://en.wikipedia.org/wiki/IL-2_Sturmovik:_1946).
 
 This launcher enables two major changes:
@@ -8,8 +13,8 @@ This launcher enables two major changes:
 
 ## Downloads
 
-* [Debug Build](https://dl.bintray.com/openil2/OpenIL2/openil2-installer-debug.exe)
-* [Release Build](https://dl.bintray.com/openil2/OpenIL2/openil2-installer.exe)
+* [Debug Build](https://github.com/DavidGregory084/OpenIL2/releases/download/latest/openil2-installer-debug.exe)
+* [Release Build](https://github.com/DavidGregory084/OpenIL2/releases/download/latest/openil2-installer-debug.exe)
 
 ## Installation Instructions
 
