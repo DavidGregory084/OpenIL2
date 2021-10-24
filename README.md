@@ -11,11 +11,6 @@ This launcher enables two major changes:
 * Replacement of the Java SE 1.3 Runtime Environment bundled with the game with a Java 11 runtime image built using [jlink](https://docs.oracle.com/en/java/javase/11/tools/jlink.html).
 * Replacement of the game's asset loading system with [PhysicsFS](https://icculus.org/physfs/), enabling assets to be loaded from archive formats such as .zip and .7z.
 
-## Downloads
-
-* [Debug Build](https://github.com/DavidGregory084/OpenIL2/releases/download/latest/openil2-installer-debug.exe)
-* [Release Build](https://github.com/DavidGregory084/OpenIL2/releases/download/latest/openil2-installer-debug.exe)
-
 ## Installation Instructions
 
 * Create a fresh installation of IL-2 Sturmovik 1946, patched to version 4.14.1.
