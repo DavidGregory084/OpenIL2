@@ -5,12 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.3]
 
 ### Added
 
-- Added a project README file.
-- Added this CHANGELOG file.
+- Added a project [README](./README.md) file.
+- Added this [CHANGELOG](./CHANGELOG.md) file.
+
+### Changed
+
+- Migrated the repository to GitHub and modified the AppVeyor build to publish releases as GitHub releases due to the [Bintray sunset](https://jfrog.com/blog/into-the-sunset-bintray-jcenter-gocenter-and-chartcenter/).
 
 ## [0.1.2] - 2021-01-27
 
