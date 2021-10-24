@@ -152,18 +152,18 @@ artifacts:
     name: Class Transformer
 
 deploy:
-  - provider: BinTray
-    username: davidgregory084
-    api_key:
-      secure: JKdWcEbXrEM9DuQfYeWkfYchP/Ybo1IKkCaJssc9bxYvroer3bGHfXLU2vK68Edi
-    subject: openil2
-    repo: OpenIL2
-    package: OpenIL2
-    version: $(RELEASE_VERSION)
-    publish: true
-    artifact: /.*openil2-installer.*\.exe/
-    on:
-      APPVEYOR_REPO_TAG: true
+  provider: GitHub
+  tag: $(RELEASE_VERSION)
+  release: OpenIL2 v$(RELEASE_VERSION)
+  description: ''
+  auth_token:
+    secure: vjyyqyGpUEI5a8s1Jw56hruqPK3v03bDBB2xzFEK0vW5AMwLTh8eDnjOOdmdZO5M 
+  artifact: /.*openil2-installer.*\.exe/
+  draft: true
+  prerelease: true
+  on:
+    branch: main
+    APPVEYOR_REPO_TAG: true
 
 cache:
   - '%USERPROFILE%\.cargo'
