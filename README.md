@@ -2,6 +2,7 @@
 
 [![Build status](https://ci.appveyor.com/api/projects/status/6e8s7mp6oq80p46k/branch/main?svg=true)](https://ci.appveyor.com/project/dgregory084/openil2/branch/main)
 ![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/DavidGregory084/OpenIL2?include_prereleases&sort=semver)
+![GitHub all releases](https://img.shields.io/github/downloads/DavidGregory084/OpenIL2/total)
 [![License](https://img.shields.io/badge/license-BSD%2BPatent-blue)](https://spdx.org/licenses/BSD-2-Clause-Patent.html)
 
 *OpenIL2* is an unofficial, modernised launcher for the 2006 combat flight simulation game [IL-2 Sturmovik 1946](https://en.wikipedia.org/wiki/IL-2_Sturmovik:_1946).
