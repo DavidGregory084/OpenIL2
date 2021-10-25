@@ -18,7 +18,7 @@ jobs:
     - uses: actions-rs/toolchain@v1.0.6
       with:
         profile: minimal
-        toolchain: i686-pc-windows-msvc
+        toolchain: stable-i686-pc-windows-msvc
     - name: Build (debug)
       working-directory: launcher
       run: cargo build
@@ -43,7 +43,7 @@ jobs:
     - uses: actions-rs/toolchain@v1.0.6
       with:
         profile: minimal
-        toolchain: i686-pc-windows-msvc
+        toolchain: stable-i686-pc-windows-msvc
     - name: Build (debug)
       working-directory: physfs_jni
       run: cargo build
@@ -63,7 +63,7 @@ jobs:
     - uses: actions-rs/toolchain@v1.0.6
       with:
         profile: minimal
-        toolchain: i686-pc-windows-msvc
+        toolchain: stable-i686-pc-windows-msvc
     - name: Build (debug)
       working-directory: physfs_rts
       run: cargo build
@@ -83,7 +83,7 @@ jobs:
     - uses: actions-rs/toolchain@v1.0.6
       with:
         profile: minimal
-        toolchain: x86_64-pc-windows-msvc
+        toolchain: stable-x86_64-pc-windows-msvc
     - name: Build (debug)
       working-directory: repacker
       run: cargo build
