@@ -272,6 +272,9 @@ jobs:
       with:
         name: release_jre
         path: jre
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x86
     - name: Add Inno Setup to PATH
       run: echo "%PROGRAMFILES(X86)%\Inno Setup 6" >> %GITHUB_PATH%
       shell: cmd
