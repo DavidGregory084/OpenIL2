@@ -154,9 +154,12 @@ jobs:
       with:
         name: physfs_jni_dll
         path: physfs_java
-    - uses: gradle/gradle-build-action@v2
-      with:
-        arguments: ':physfs_java:jar'
+    - name: List directory
+      run: Get-ChildItem physfs_java
+      shell: pwsh
+    - name: Build
+      working-directory: physfs_java
+      run: './gradlew.bat jar'
     - uses: actions/upload-artifact@v2
       with:
         name: physfs_java_jar
@@ -179,7 +182,8 @@ jobs:
         $graalvm_home = cs java-home graalvm-ce-java11:20.3.2
         echo "GRAALVM_HOME=$graalvm_home" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
     - name: Build
-      run: './gradlew.bat :classload_agent:jar :classload_agent:nativeImage'
+      working-directory: classload_agent
+      run: './gradlew.bat jar nativeImage'
     - uses: actions/upload-artifact@v2
       with:
         name: classload_agent_exe
