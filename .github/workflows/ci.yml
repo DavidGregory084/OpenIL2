@@ -285,11 +285,13 @@ jobs:
         name: release_jre
         path: jre
     - name: Create debug installer
-      run: $($env:ProgramFiles`(x86`) + '\Inno` Setup` 6\iscc.exe /Oinstaller\output installer\openil2-debug.iss')
-      shell: pwsh
+      run: |
+        "%PROGRAMFILES(X86)%\Inno Setup 6\iscc.exe" /Oinstaller\output installer\openil2-debug.iss
+      shell: cmd
     - name: Create release installer
-      run: $($env:ProgramFiles`(x86`) + '\Inno` Setup` 6\iscc.exe /Oinstaller\output installer\openil2.iss')
-      shell: pwsh
+      run: |
+        "%PROGRAMFILES(X86)%\Inno Setup 6\iscc.exe" /Oinstaller\output installer\openil2.iss
+      shell: cmd
     - uses: actions/upload-artifact@v2
       with:
         name: installer_exes
