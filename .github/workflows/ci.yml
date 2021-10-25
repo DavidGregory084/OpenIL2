@@ -288,11 +288,11 @@ jobs:
       run: echo "%PROGRAMFILES(X86)%\Inno Setup 6" >> %GITHUB_PATH%
       shell: cmd
     - name: Create debug installer
-      run: iscc /O${env:GITHUB_WORKSPACE}\installer\output ${env:GITHUB_WORKSPACE}\installer\openil2-debug.iss
-      shell: pwsh
+      run: iscc /O%GITHUB_WORKSPACE%\installer\output %GITHUB_WORKSPACE%\installer\openil2-debug.iss
+      shell: cmd
     - name: Create release installer
-      run: iscc /O${env:GITHUB_WORKSPACE}\installer\output ${env:GITHUB_WORKSPACE}\installer\openil2.iss
-      shell: pwsh
+      run: iscc /O%GITHUB_WORKSPACE%\installer\output %GITHUB_WORKSPACE%\installer\openil2.iss
+      shell: cmd
     - uses: actions/upload-artifact@v2
       with:
         name: installer_exes
