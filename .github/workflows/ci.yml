@@ -170,6 +170,7 @@ jobs:
       with:
         arguments: jar
         build-root-directory: physfs_java
+        gradle-version: 6.5
     - uses: actions/upload-artifact@v2
       with:
         name: physfs_java_jar
@@ -195,6 +196,7 @@ jobs:
       with:
         arguments: 'jar nativeImage'
         build-root-directory: classload_agent
+        gradle-version: 6.5
     - uses: actions/upload-artifact@v2
       with:
         name: classload_agent_exe
