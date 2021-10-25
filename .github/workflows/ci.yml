@@ -26,7 +26,7 @@ jobs:
         java-version: '11'
         architecture: x86
     - name: Set LIBCLANG_PATH
-      run: echo 'LIBCLANG_PATH=' + $env:VCINSTALLDIR + '\Tools\Llvm\bin' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
+      run: echo 'LIBCLANG_PATH=' + ${env:VCINSTALLDIR} + '\Tools\Llvm\bin' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
     - name: Build (debug)
       working-directory: launcher
       run: cargo build
@@ -62,7 +62,7 @@ jobs:
         java-version: '11'
         architecture: x86
     - name: Set LIBCLANG_PATH
-      run: echo 'LIBCLANG_PATH=' + $env:VCINSTALLDIR + '\Tools\Llvm\bin' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
+      run: echo 'LIBCLANG_PATH=' + ${env:VCINSTALLDIR} + '\Tools\Llvm\bin' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
     - name: Build (debug)
       working-directory: physfs_jni
       run: cargo build
@@ -91,7 +91,7 @@ jobs:
         java-version: '11'
         architecture: x86
     - name: Set LIBCLANG_PATH
-      run: echo 'LIBCLANG_PATH=' + $env:VCINSTALLDIR + '\Tools\Llvm\bin' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
+      run: echo 'LIBCLANG_PATH=' + ${env:VCINSTALLDIR} + '\Tools\Llvm\bin' | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
     - name: Build (debug)
       working-directory: physfs_rts
       run: cargo build
