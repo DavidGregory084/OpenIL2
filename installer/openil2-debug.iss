@@ -44,9 +44,9 @@ Source: "..\launcher\target\debug\openil2.pdb"; DestDir: "{app}"; Flags: ignorev
 Source: "..\repacker\target\release\repacker.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\repacker\target\release\repacker.pdb"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_jni\target\release\physfs_jni.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\physfs_jni\target\release\deps\physfs_jni.pdb"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\physfs_jni\target\release\physfs_jni.pdb"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_rts\target\release\physfs_rts.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\physfs_rts\target\release\deps\physfs_rts.pdb"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\physfs_rts\target\release\physfs_rts.pdb"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_java\physfs.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_java\rts.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\physfs_java\build\libs\physfs_java.jar"; DestDir: "{app}"; Flags: ignoreversion
