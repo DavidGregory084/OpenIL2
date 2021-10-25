@@ -9,6 +9,7 @@ on: workflow_dispatch
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTFLAGS: '-C target-feature=+crt-static'
 
 jobs:
   build-launcher:
@@ -126,6 +127,11 @@ jobs:
     - uses: coursier/setup-action@v1
       with:
         jvm: graalvm-ce-java11:20.3.2
+    - name: Set GRAALVM_HOME
+      shell: pwsh
+      run: |
+        $graalvm_home = cs java-home graalvm-ce-java11:20.3.2
+        echo "GRAALVM_HOME=$graalvm_home" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
     - uses: gradle/gradle-build-action@v2
       with:
         arguments: ':classload_agent:jar :classload_agent:nativeImage'
