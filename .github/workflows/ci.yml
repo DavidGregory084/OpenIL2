@@ -248,6 +248,7 @@ jobs:
     runs-on: windows-2019
     needs: [build-launcher, build-physfs_jni, build-physfs_rts, build-repacker, build-physfs_java, build-classload_agent, create-custom-java-runtimes]
     steps:
+    - uses: actions/checkout@v2
     - uses: actions/download-artifact@v2
       with:
         name: launcher_exe_debug
