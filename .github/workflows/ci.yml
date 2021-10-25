@@ -182,7 +182,6 @@ jobs:
         $graalvm_home = cs java-home graalvm-ce-java11:20.3.2
         echo "GRAALVM_HOME=$graalvm_home" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
     - name: Build
-      working-directory: classload_agent
       run: './gradlew.bat :classload_agent:jar :classload_agent:nativeImage'
     - uses: actions/upload-artifact@v2
       with:
