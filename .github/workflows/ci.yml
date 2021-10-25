@@ -25,6 +25,9 @@ jobs:
         distribution: 'temurin'
         java-version: '11'
         architecture: x86
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x86
     - name: Set LIBCLANG_PATH
       run: echo $('LIBCLANG_PATH=' + $env:VCINSTALLDIR + '\Tools\Llvm\bin') | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
     - name: Build (debug)
@@ -61,6 +64,9 @@ jobs:
         distribution: 'temurin'
         java-version: '11'
         architecture: x86
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x86
     - name: Set LIBCLANG_PATH
       run: echo $('LIBCLANG_PATH=' + $env:VCINSTALLDIR + '\Tools\Llvm\bin') | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
     - name: Build (debug)
@@ -90,6 +96,9 @@ jobs:
         distribution: 'temurin'
         java-version: '11'
         architecture: x86
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x86
     - name: Set LIBCLANG_PATH
       run: echo $('LIBCLANG_PATH=' + $env:VCINSTALLDIR + '\Tools\Llvm\bin') | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
     - name: Build (debug)
@@ -114,6 +123,9 @@ jobs:
       with:
         profile: minimal
         toolchain: stable-x86_64-pc-windows-msvc
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
     - name: Build (debug)
       working-directory: repacker
       run: cargo build
@@ -158,15 +170,16 @@ jobs:
     - uses: coursier/setup-action@v1
       with:
         jvm: graalvm-ce-java11:20.3.0
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
     - name: Set GRAALVM_HOME
       shell: pwsh
       run: |
         $graalvm_home = cs java-home graalvm-ce-java11:20.3.2
-        Get-ChildItem $graalvm_home
         echo "GRAALVM_HOME=$graalvm_home" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
-    - uses: gradle/gradle-build-action@v2
-      with:
-        arguments: ':classload_agent:jar :classload_agent:nativeImage'
+    - name: Build
+      run: './gradlew.bat :classload_agent:jar :classload_agent:nativeImage'
     - uses: actions/upload-artifact@v2
       with:
         name: classload_agent_exe
