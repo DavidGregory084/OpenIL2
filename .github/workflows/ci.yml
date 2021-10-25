@@ -159,7 +159,7 @@ jobs:
       shell: pwsh
     - name: Build
       working-directory: physfs_java
-      run: './gradlew.bat jar'
+      run: '../gradlew.bat jar'
     - uses: actions/upload-artifact@v2
       with:
         name: physfs_java_jar
@@ -183,7 +183,7 @@ jobs:
         echo "GRAALVM_HOME=$graalvm_home" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
     - name: Build
       working-directory: classload_agent
-      run: './gradlew.bat jar nativeImage'
+      run: './gradlew.bat :classload_agent:jar :classload_agent:nativeImage'
     - uses: actions/upload-artifact@v2
       with:
         name: classload_agent_exe
