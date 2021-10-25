@@ -20,6 +20,9 @@ jobs:
       with:
         profile: minimal
         toolchain: stable-i686-pc-windows-msvc
+    - uses: Swatinem/rust-cache@v1
+      with:
+        working-directory: launcher
     - uses: actions/setup-java@v2
       with:
         distribution: 'temurin'
@@ -59,6 +62,9 @@ jobs:
       with:
         profile: minimal
         toolchain: stable-i686-pc-windows-msvc
+    - uses: Swatinem/rust-cache@v1
+      with:
+        working-directory: physfs_jni
     - uses: actions/setup-java@v2
       with:
         distribution: 'temurin'
@@ -90,7 +96,10 @@ jobs:
     - uses: actions-rs/toolchain@v1.0.6
       with:
         profile: minimal
-        toolchain: stable-i686-pc-windows-msvc    
+        toolchain: stable-i686-pc-windows-msvc 
+    - uses: Swatinem/rust-cache@v1
+      with:
+        working-directory: physfs_rts
     - uses: actions/setup-java@v2
       with:
         distribution: 'temurin'
@@ -123,6 +132,9 @@ jobs:
       with:
         profile: minimal
         toolchain: stable-x86_64-pc-windows-msvc
+    - uses: Swatinem/rust-cache@v1
+      with:
+        working-directory: repacker
     - uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: x64
@@ -164,6 +176,7 @@ jobs:
         distribution: 'temurin'
         java-version: '11'
         architecture: x86
+        cache: 'gradle'
     - uses: actions/download-artifact@v2
       with:
         name: physfs_jni_dll
@@ -172,7 +185,7 @@ jobs:
       run: Get-ChildItem physfs_java
       shell: pwsh
     - name: Build
-      run: './gradlew.bat :physfs_java:jar'
+      run: './gradlew.bat --no-daemon :physfs_java:jar'
     - uses: actions/upload-artifact@v2
       with:
         name: physfs_java_jar
@@ -194,8 +207,9 @@ jobs:
       run: |
         $graalvm_home = cs java-home graalvm-ce-java11:20.3.2
         echo "GRAALVM_HOME=$graalvm_home" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
-    - name: Build
-      run: './gradlew.bat :classload_agent:jar :classload_agent:nativeImage'
+    - uses: gradle/gradle-build-action@v2
+      with:
+        arguments: ':classload_agent:jar :classload_agent:nativeImage'
     - uses: actions/upload-artifact@v2
       with:
         name: classload_agent_exe
