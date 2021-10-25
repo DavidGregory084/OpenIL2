@@ -1,0 +1,232 @@
+name: Continuous integration
+
+on: workflow_dispatch
+#on:
+#  push:
+#    branches: [ main ]
+#  pull_request:
+#    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-launcher:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1.0.6
+      with:
+        profile: minimal
+        toolchain: i686-pc-windows-msvc
+    - name: Build (debug)
+      working-directory: launcher
+      run: cargo build
+    - name: Build (release)
+      working-directory: launcher
+      run: cargo build --release
+    - uses: actions/upload-artifact@v2
+      with:
+        name: launcher_exe_debug
+        path: launcher\target\debug\openil2.{exe,pdb}
+        if-no-files-found: error
+    - uses: actions/upload-artifact@v2
+      with:
+        name: launcher_exe_release
+        path: launcher\target\release\openil2.{exe,pdb}
+        if-no-files-found: error
+
+  build-physfs_jni:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1.0.6
+      with:
+        profile: minimal
+        toolchain: i686-pc-windows-msvc
+    - name: Build (debug)
+      working-directory: physfs_jni
+      run: cargo build
+    - name: Build (release)
+      working-directory: physfs_jni
+      run: cargo build --release
+    - uses: actions/upload-artifact@v2
+      with:
+        name: physfs_jni_dll
+        path: physfs_jni\target\release\physfs_jni.{dll,pdb}
+        if-no-files-found: error
+      
+  build-physfs_rts:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1.0.6
+      with:
+        profile: minimal
+        toolchain: i686-pc-windows-msvc
+    - name: Build (debug)
+      working-directory: physfs_rts
+      run: cargo build
+    - name: Build (release)
+      working-directory: physfs_rts
+      run: cargo build --release
+    - uses: actions/upload-artifact@v2
+      with:
+        name: physfs_rts_dll
+        path: physfs_rts\target\release\physfs_rts.{dll,pdb}
+        if-no-files-found: error
+      
+  build-repacker:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1.0.6
+      with:
+        profile: minimal
+        toolchain: x86_64-pc-windows-msvc
+    - name: Build (debug)
+      working-directory: repacker
+      run: cargo build
+    - name: Build (release)
+      working-directory: repacker
+      run: cargo build --release
+    - uses: actions/upload-artifact@v2
+      with:
+        name: repacker_exe
+        path: repacker\target\release\repacker.{exe,pdb}
+        if-no-files-found: error
+
+  build-physfs_java:
+    runs-on: windows-2019
+    needs: build-physfs_jni
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-java@v2
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+        architecture: x86
+    - uses: actions/download-artifact@v2
+      with:
+        name: physfs_jni_dll
+        path: physfs_java
+    - uses: gradle/gradle-build-action@v2
+      with:
+        arguments: ':physfs_java:jar'
+    - uses: actions/upload-artifact@v2
+      with:
+        name: physfs_java_jar
+        path: physfs_java\build\libs\physfs_java.jar
+        if-no-files-found: error
+
+  build-classload_agent:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - uses: coursier/setup-action@v1
+      with:
+        jvm: graalvm-ce-java11:20.3.2
+    - uses: gradle/gradle-build-action@v2
+      with:
+        arguments: ':classload_agent:jar :classload_agent:nativeImage'
+    - uses: actions/upload-artifact@v2
+      with:
+        name: classload_agent_exe
+        path: classload_agent\build\executable\class-transformer.{exe,pdb}
+        if-no-files-found: error
+        
+  create-custom-java-runtimes:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-java@v2
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+        architecture: x86
+    - name: Create debug runtime
+      run: jlink --no-header-files --no-man-pages --add-modules java.base,java.instrument,java.desktop,jdk.localedata,jdk.jdwp.agent,jdk.management.agent --output jre_debug
+      shell: pwsh
+    - name: Create release runtime 
+      run: jlink --no-header-files --no-man-pages --add-modules java.base,java.instrument,java.desktop,jdk.localedata --output jre
+      shell: pwsh
+    - uses: actions/upload-artifact@v2
+      with:
+        name: debug_jre
+        path: jre_debug
+        if-no-files-found: error
+    - uses: actions/upload-artifact@v2
+      with:
+        name: release_jre
+        path: jre
+        if-no-files-found: error
+
+  create-installers:
+    runs-on: windows-2019
+    needs: [build-launcher, build-physfs_jni, build-physfs_rts, build-repacker, build-physfs_java, build-classload_agent, create-custom-java-runtimes]
+    steps:
+    - uses: actions/download-artifact@v2
+      with:
+        name: launcher_exe_debug
+        path: launcher\target\debug
+    - uses: actions/download-artifact@v2
+      with:
+        name: launcher_exe_release
+        path: launcher\target\release
+    - uses: actions/download-artifact@v2
+      with:
+        name: physfs_jni_dll
+        path: physfs_jni\target\release
+    - uses: actions/download-artifact@v2
+      with:
+        name: physfs_rts_dll
+        path: physfs_rts\target\release
+    - uses: actions/download-artifact@v2
+      with:
+        name: repacker_exe
+        path: repacker\target\release
+    - uses: actions/download-artifact@v2
+      with:
+        name: physfs_java_jar
+        path: physfs_java\build\libs
+    - uses: actions/download-artifact@v2
+      with:
+        name: classload_agent_exe
+        path: classload_agent\build\executable
+    - uses: actions/download-artifact@v2
+      with:
+        name: debug_jre
+        path: jre_debug
+    - uses: actions/download-artifact@v2
+      with:
+        name: release_jre
+        path: jre
+    - name: Create debug installer
+      run: '${env:ProgramFiles(x86)}\Inno Setup 6\iscc.exe /Oinstaller\output installer\openil2-debug.iss'
+      shell: pwsh
+    - name: Create release installer
+      run: '${env:ProgramFiles(x86)}\Inno Setup 6\iscc.exe /Oinstaller\output installer\openil2.iss'
+      shell: pwsh
+    - uses: actions/upload-artifact@v2
+      with:
+        name: installer_exes
+        path: installer\output\*.exe
+        if-no-files-found: error
+        
+  create-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: windows-2019
+    needs: create-installers
+    steps:
+    - uses: actions/download-artifact@v2
+      with:
+        name: installer_exes
+    - name: Create GitHub release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: OpenIL2 v${{ github.ref }}
+        draft: true
+        files: |
+          openil2-installer.*.exe
+        fail_on_unmatched_files: true
+    
