@@ -20,6 +20,11 @@ jobs:
       with:
         profile: minimal
         toolchain: stable-i686-pc-windows-msvc
+    - uses: actions/setup-java@v2
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+        architecture: x86
     - name: Add Clang to PATH
       run: echo "C:\msys64\mingw32\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Build (debug)
@@ -47,6 +52,11 @@ jobs:
       with:
         profile: minimal
         toolchain: stable-i686-pc-windows-msvc
+    - uses: actions/setup-java@v2
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+        architecture: x86
     - name: Add Clang to PATH
       run: echo "C:\msys64\mingw32\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Build (debug)
@@ -68,7 +78,12 @@ jobs:
     - uses: actions-rs/toolchain@v1.0.6
       with:
         profile: minimal
-        toolchain: stable-i686-pc-windows-msvc
+        toolchain: stable-i686-pc-windows-msvc    
+    - uses: actions/setup-java@v2
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+        architecture: x86
     - name: Add Clang to PATH
       run: echo "C:\msys64\mingw32\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Build (debug)
