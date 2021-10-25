@@ -281,9 +281,6 @@ jobs:
     - name: Set release version
       run: echo $("RELEASE_VERSION=" + $(git describe --tags --always)) | Out-File -FilePath $env:GITHUB_ENV -Encoding utf-8 -Append
       shell: pwsh
-    - uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: x86
     - name: Create debug installer
       run: iscc /O%GITHUB_WORKSPACE%\installer\output %GITHUB_WORKSPACE%\installer\openil2-debug.iss
       shell: cmd
