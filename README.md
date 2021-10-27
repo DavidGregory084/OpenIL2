@@ -1,6 +1,6 @@
 # OpenIL2
 
-[![Build status](https://ci.appveyor.com/api/projects/status/6e8s7mp6oq80p46k/branch/main?svg=true)](https://ci.appveyor.com/project/dgregory084/openil2/branch/main)
+[![Continuous integration](https://github.com/DavidGregory084/OpenIL2/actions/workflows/ci.yml/badge.svg)](https://github.com/DavidGregory084/OpenIL2/actions/workflows/ci.yml)
 ![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/DavidGregory084/OpenIL2?include_prereleases&sort=semver)
 ![GitHub all releases](https://img.shields.io/github/downloads/DavidGregory084/OpenIL2/total)
 [![License](https://img.shields.io/badge/license-BSD%2BPatent-blue)](https://spdx.org/licenses/BSD-2-Clause-Patent.html)
